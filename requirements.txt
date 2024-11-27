@@ -1,0 +1,9 @@
+Flask
+opencv-python
+mediapipe
+numpy
+pyautogui
+python-socketio
+flask-socketio
+flask-cors
+eventlet

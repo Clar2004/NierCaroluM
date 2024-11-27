@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Threshold Puzzle</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/threshold.css') }}"
+    />
+  </head>
+  <body>
+
+    <div class="terminal" id="terminal">
+      <div class="terminal-line">
+          <span class="prompt">codebind@code:~$</span> Adjsut the threshold to find the hidden message!
+      </div>
+      <div class="terminal-line terminal-input" id="current-prompt">
+        <span class="prompt">codebind@code:~$</span>
+        <input
+          type="text"
+          id="decoded-message"
+          onkeydown="handleKeyPress(event)"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/threshold.js') }}"></script>
+
+    <div class="game-container">
+      <img id="video" src="/threshold_feed" alt="Threshold Feed" />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Menu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}">
+</head>
+<body>
+   <div class="loading-overlay" id="loading-overlay">
+      <div class="loader"></div>
+   </div>
+
+   <!-- Background Audio -->
+    <audio id="background-audio" autoplay loop>
+        <source src="{{ url_for('static', filename='assets/TitleSound.mp3') }}" type="audio/mp3">
+        Your browser does not support the audio tag.
+    </audio>
+
+    <!-- Video Background -->
+    <video autoplay loop muted playsinline id="background-video">
+        <source src="{{ url_for('static', filename='assets/TitleBackground.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Menu Content -->
+    <div class="menu-content">
+         <img src="{{ url_for('static', filename='assets/images/GameTitle.png') }}" alt="Game Menu Title" class="title-image">
+        <div class="menu">
+            <button class=".menu-content button" id="play-demo" onclick="handleButtonClick(event, '/edge_corner')">Play Demo</button>
+        </div>
+    </div>
+
+    <div class="custom-cursor" id="custom-cursor"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/menuGesture.js') }}"></script>
+</body>
+</html>

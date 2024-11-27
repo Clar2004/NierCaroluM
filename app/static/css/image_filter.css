@@ -1,0 +1,87 @@
+body {
+   display: flex;
+   justify-content: space-between;
+   align-items: flex-start;
+   background-color: #090006;
+   color: #0dbf0d;
+   font-family: 'Courier New', Courier, monospace;
+   margin: 0;
+   padding: 20px;
+   height: 100vh;
+   overflow: hidden;
+}
+
+.game-title {
+   color: white;
+   font-family: 'Times New Roman', Times, serif;
+   text-align: center;
+   margin-bottom: 20px;
+}
+
+.game-container {
+   flex: 1;
+   text-align: center;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+}
+
+#video {
+   border: 2px solid #071707;
+   /* Green border */
+   border-radius: 10px;
+   max-width: 100%;
+   width: 800px;
+   /* Set a maximum width for the video feed */
+   height: auto;
+   margin-top: 8px;
+}
+
+.terminal {
+   flex: 1;
+   max-width: 35%;
+   background-color: #202020;
+   /* Darker terminal-like background */
+   padding: 20px;
+   border-radius: 10px;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+   height: 80vh;
+   overflow-y: auto;
+   margin-right: 20px;
+}
+
+.terminal::-webkit-scrollbar {
+   display: none;
+}
+
+.terminal-line {
+   margin-bottom: 10px;
+}
+
+.terminal-input {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.prompt {
+   color: #0dbf0d;
+   /* Green terminal prompt color */
+}
+
+#message-input {
+   background-color: transparent;
+   /* Dark input background */
+   color: #ffffff;
+   /* Green text */
+   font-family: 'Courier New', Courier, monospace;
+   border: none;
+   outline: none;
+   padding: 5px;
+   font-size: 1em;
+   width: 100%;
+}
+
+.hidden {
+   display: none;
+}

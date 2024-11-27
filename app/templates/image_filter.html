@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filter Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/image_filter.css') }}" />
+</head>
+<body>
+    <!-- Terminal Section -->
+    <div class="terminal" id="terminal">
+        <div class="terminal-line">
+            <span class="prompt">codebind@code:~$</span> Find the hidden message in the blurred image!
+        </div>
+        <div class="terminal-line terminal-input" id="current-prompt">
+            <span class="prompt">codebind@code:~$</span>
+            <input 
+              type="text" 
+              id="message-input" 
+              onkeydown="handleKeyPress(event)" 
+              autocomplete="off"/>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/image_filter.js') }}"></script>
+
+    <!-- Game Container Section -->
+    <div class="game-container">
+        <img id="video" src="/video_feed" alt="Video Feed" onload="enableInput()" />
+    </div>
+
+</body>
+</html>

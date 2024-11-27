@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge & Corner Detection Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/edge_corner_game.css') }}">
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/edge_corner_game.js') }}"></script>
+    
+    <div id="health-container" class="health-container">
+        <img src="{{ url_for('static', filename='assets/images/yorha-logo.png') }}" alt="Health" class="health-icon">
+        <img src="{{ url_for('static', filename='assets/images/yorha-logo.png') }}" alt="Health" class="health-icon">
+        <img src="{{ url_for('static', filename='assets/images/yorha-logo.png') }}" alt="Health" class="health-icon">
+    </div>
+</body>
+</html>

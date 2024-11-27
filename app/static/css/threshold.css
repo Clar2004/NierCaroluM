@@ -1,0 +1,81 @@
+/* General Page Styling */
+body {
+   display: flex;
+   justify-content: space-between;
+   align-items: flex-start;
+   background-color: #090006;
+   color: #0dbf0d;
+   font-family: 'Courier New', Courier, monospace;
+   margin: 0;
+   padding: 20px;
+   height: 100vh;
+   overflow: hidden;
+   text-align: left;
+}
+
+/* Terminal Section */
+.terminal {
+   flex: 1;
+   max-width: 35%;
+   background-color: #202020;
+   /* Dark terminal-like background */
+   padding: 20px;
+   border-radius: 10px;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+   height: 80vh;
+   overflow-y: auto;
+   margin-right: 20px;
+}
+
+.terminal::-webkit-scrollbar {
+   display: none;
+}
+
+.terminal-line {
+   margin-bottom: 10px;
+}
+
+.terminal-input {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.prompt {
+   color: #0dbf0d;
+   /* Green terminal prompt color */
+}
+
+#decoded-message {
+   background-color: transparent;
+   /* Dark input background */
+   color: #ffffff;
+   /* White text */
+   font-family: 'Courier New', Courier, monospace;
+   border: none;
+   outline: none;
+   padding: 5px;
+   font-size: 1em;
+   width: 100%;
+   text-align: left;
+}
+
+/* Game Container Section */
+.game-container {
+   flex: 2;
+   /* Allow it to take more space compared to terminal */
+   text-align: center;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+}
+
+#video {
+   border: 5px solid #555;
+   border-radius: 10px;
+   max-width: 800px;
+   /* Set a maximum width for the video feed */
+   width: 100%;
+   height: auto;
+   margin-top: 8px;
+}
