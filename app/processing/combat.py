@@ -5,6 +5,7 @@ from threading import Lock
 import time
 from ball import RedBall
 import math
+import os
 
 lock = Lock()
 SHOT_COOLDOWN = 0.3
@@ -39,6 +40,7 @@ video_height = 1240
 # Player initial position (middle left)
 player_x = 100  # x position at the left side of the screen
 player_y = video_height // 2  # y position at the center
+last_player_y = player_y
 
 # Store the shots (each shot has x, y coordinates and direction)
 shots = []
@@ -47,6 +49,10 @@ shots = []
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 mp_draw = mp.solutions.drawing_utils
+
+isDead = False
+isCheat = False
+isCheatTriggered = False
 
 ##boss section ##
 
@@ -96,7 +102,7 @@ red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_
 # Define Ball Speed
 ball_speed = 10  # Speed of the red ball
 boss_speed = 10
-ball2_speed = 5
+ball2_speed = 10
 
 # Red Ball launch cooldown for the boss (interval between shots)
 BALL_SHOT_COOLDOWN = 1.5  # Boss shot cooldown
@@ -111,6 +117,110 @@ shooting_time = 10  # Shooting duration in seconds
 idle_time = 2  # Idle duration in seconds
 image_change_duration = 2  # Duration for each image change in seconds
 boss_image_index = 1  # Keeps track of the image cycle
+
+# Global variable for health count and image
+player_health = 5  # Starting health
+health_image = cv2.imread('static/assets/images/yorha-logo.png', cv2.IMREAD_UNCHANGED)  # The image representing a health point
+health_offset_x = 20  # Offset for drawing the health at the bottom-left corner
+health_offset_y = 20  # Position from the bottom of the screen (adjust as needed)
+
+animation_folder = 'static/assets/explosion'  # Replace with your actual folder path
+animation_images = []
+frame_delay = 300  # Delay between frames in milliseconds (adjust as needed)
+
+show_text_start_time = None
+
+def load_animation_images():
+    global animation_images
+    for filename in sorted(os.listdir(animation_folder)):
+        if filename.endswith(".png") or filename.endswith(".jpg"):  # Assuming the images are in .png or .jpg format
+            img = cv2.imread(os.path.join(animation_folder, filename), cv2.IMREAD_UNCHANGED)
+            animation_images.append(img)
+            
+def run_death_animation(frame_list, x, y, combined_frame):
+    global player_image  # Ensure this is the image for the player (which can be resized accordingly)
+    
+    # Get the player image dimensions to adjust the animation size
+    player_height, player_width = player_image.shape[:2]
+
+    for frame in frame_list:
+        # Resize the frame to match the player size or the size of the area to overlay it on
+        frame_resized = cv2.resize(frame, (player_width, player_height))
+
+        # Ensure the frame has an alpha channel for transparency (RGBA)
+        if frame_resized.shape[2] == 4:  # Check if the frame has an alpha channel (RGBA)
+            alpha_channel = frame_resized[:, :, 3] / 255.0  # Normalize alpha to [0, 1]
+
+            # Overlay the resized frame on the combined_frame at the player position
+            for c in range(0, 3):  # Loop through each color channel (BGR)
+                combined_frame[y:y+player_height, x:x+player_width, c] = \
+                    combined_frame[y:y+player_height, x:x+player_width, c] * (1 - alpha_channel) + \
+                    frame_resized[:, :, c] * alpha_channel
+        else:
+            print("Warning: Frame does not have an alpha channel, skipping overlay.")
+            
+    return combined_frame
+
+def check_collisions_and_update_health(socketio, combined_frame):
+    """Check for collisions with lasers or red balls and reduce health."""
+    global player_health, lasers, red_balls, animation_images, player_x, player_y, isDead, isCheat
+
+    # Check for collisions with lasers
+    for laser in lasers[:]:
+        if is_collision_with_player(laser) and not isCheat:  # Check if laser hits the player
+            lasers.remove(laser)  # Remove the laser from the game
+            player_health -= 1  # Decrease health
+            if player_health <= 0:
+                isDead = True
+                run_death_animation(animation_images, player_x, player_y, combined_frame)
+                socketio.emit('redirect_to_menu', {'message': 'Boss defeated!'})
+                socketio.sleep(0.0001)
+            break  # Break to prevent multiple health reductions for one collision
+
+    # Check for collisions with red balls
+    for red_ball in red_balls[:]:
+        if is_collision_with_player(red_ball) and not isCheat:  # Check if red ball hits the player
+            red_balls.remove(red_ball)  # Remove the red ball
+            player_health -= 1  # Decrease health
+            if player_health <= 0:
+                isDead = True
+                run_death_animation(animation_images, player_x, player_y, combined_frame)
+                socketio.emit('redirect_to_menu', {'message': 'Boss defeated!'})
+                socketio.sleep(0.0001)
+            break  # Break to prevent multiple health reductions for one collision
+    
+    if is_collision_with_boss() and not isCheat:
+        # If player collides with the boss, directly set health to 0
+        player_health = 0
+        isDead = True
+        run_death_animation(animation_images, player_x, player_y, combined_frame)
+        socketio.emit('redirect_to_menu', {'message': 'Game Over!'})
+        socketio.sleep(0.0001)
+    
+    return combined_frame, isDead
+
+def is_collision_with_boss():
+    global player_x, player_y, player_image, boss_x, boss_y, boss_image
+    
+    # Use both width and height to compute a more accurate "radius"
+    player_radius = (player_image.shape[1] + player_image.shape[0]) / 4 - 20
+    boss_radius = (boss_image.shape[1] + boss_image.shape[0]) / 4 - 20
+
+    # Calculate distance between the centers of the player and the boss
+    dist = math.sqrt((boss_x - player_x) ** 2 + (boss_y - player_y) ** 2)
+    
+    if dist < (player_radius + boss_radius):
+        return True
+    return False
+
+def is_collision_with_player(projectile):
+    global player_x, player_y, player_image
+    
+    player_radius = player_image.shape[1] // 2
+    dist = math.sqrt((projectile.x - player_x) ** 2 + (projectile.y - player_y) ** 2)
+    if dist < player_radius:
+        return True
+    return False
 
 def shoot_red_ball(boss_x, boss_y, boss_rotation_angle):
     """Launch multiple red balls from fixed positions around the boss."""
@@ -226,40 +336,48 @@ def detect_hand_gesture(frame):
     
     right_hand_position = None  # Right hand position
     left_hand_gesture = None  # Gesture of the left hand
+    right_hand_gesture = None
     
     if result.multi_hand_landmarks:
         for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
             # Determine if it's the left or right hand
             hand_label = handedness.classification[0].label
+            
+            # Initialize finger landmarks for both hands
+            thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+            index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+            middle_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+            ring_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP]
+            pinky_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP]
+            wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
+
+            # Calculate the distance between the wrist and the index finger tip
+            index_finger_distance = math.sqrt(
+                (index_finger_tip.x - wrist.x) ** 2 + (index_finger_tip.y - wrist.y) ** 2
+            )
 
             # Right hand (pointing with index finger)
-            if hand_label == 'Left':
-                # Right hand index finger tip is at landmark index 8
-                index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+            if hand_label == 'Right':  # This is the right hand
+                # Check if the index finger is extended (pointing gesture)
                 right_hand_position = (int(index_finger_tip.x * video_width), int(index_finger_tip.y * video_height))
 
             # Left hand (fist gesture)
-            elif hand_label == 'Right':
-                # Detect fist gesture (example logic)
-                # We'll use the wrist and finger landmarks to detect a closed fist.
-                # A basic check is to see if the finger tips are near the palm (fist gesture).
-                thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
-                index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                middle_tip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
-                ring_tip = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP]
-                pinky_tip = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP]
-                
-                # Fist detection logic: Check if the finger tips are close to the palm
-                if (abs(thumb_tip.x - index_tip.x) < 0.05 and
-                    abs(index_tip.x - middle_tip.x) < 0.05 and
-                    abs(middle_tip.x - ring_tip.x) < 0.05 and
-                    abs(ring_tip.x - pinky_tip.x) < 0.05):
+            elif hand_label == 'Left':  # This is the left hand
+                # Detect fist gesture (simple check)
+                if (abs(thumb_tip.x - index_finger_tip.x) < 0.05 and
+                    abs(index_finger_tip.x - middle_finger_tip.x) < 0.05 and
+                    abs(middle_finger_tip.x - ring_finger_tip.x) < 0.05 and
+                    abs(ring_finger_tip.x - pinky_finger_tip.x) < 0.05):
                     left_hand_gesture = "fist"
-
+                    
+                # Detect index and middle finger going up (peace sign)
+                if index_finger_tip.y < middle_finger_tip.y:
+                    right_hand_gesture = "cheat"
+                    
             # Draw hand landmarks (optional, for debugging)
             mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-    return right_hand_position, left_hand_gesture
+    return right_hand_position, left_hand_gesture, right_hand_gesture
 
 # Function to create and fire a shot with a cooldown mechanism
 def shoot(shot_x, shot_y, direction):
@@ -499,6 +617,67 @@ def draw_health_bar(frame, health, max_health, health_bar_y, health_bar_width, h
     text_x = (frame.shape[1] - text_size[0]) // 2  # center the text horizontally
     text_y = health_bar_y - 20  # position the text just above the health bar
     cv2.putText(frame, text, (text_x, text_y), font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+
+def draw_health(frame):
+    """Draw the health images at the bottom-left corner of the screen."""
+    global health_image, player_health, health_offset_x, health_offset_y
+    
+    # Check if the frame is valid
+    if frame is None or frame.shape[0] == 0 or frame.shape[1] == 0:
+        print("Invalid frame!")
+        return frame
+    
+    # Ensure health_image is not None and is properly loaded
+    if health_image is None:
+        print("Error: health_image is not loaded properly!")
+        return frame
+
+    # Check if the health image has 4 channels (alpha channel)
+    has_alpha = health_image.shape[2] == 4  # Check for alpha channel (BGRA or RGBA)
+    
+    # Resize the health image to a smaller size (e.g., 10% of original size)
+    new_width = int(health_image.shape[1] * 0.04)  # 10% of original width
+    new_height = int(health_image.shape[0] * 0.03)  # 10% of original height
+    resized_health_image = cv2.resize(health_image, (new_width, new_height))
+
+    # Convert the frame to BGRA if it has no alpha channel (convert BGR to BGRA)
+    if frame.shape[2] != 4:
+        print("Converting frame to BGRA.")
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+
+    # Calculate y_offset to place health bar at the bottom-left corner
+    y_offset = frame.shape[0] - resized_health_image.shape[0] - health_offset_y
+    
+    # If y_offset is still negative, adjust it to a reasonable value
+    if y_offset < 0:
+        y_offset = frame.shape[0] - resized_health_image.shape[0]  # Set to bottom of the frame
+        print("Warning: y_offset was negative. Adjusted to bottom of the frame.")
+    
+    # Loop to place each resized health image
+    for i in range(player_health):
+        x_offset = health_offset_x + i * resized_health_image.shape[1]
+        
+        # Ensure the health image fits within the frame
+        if x_offset + resized_health_image.shape[1] <= frame.shape[1] and y_offset + resized_health_image.shape[0] <= frame.shape[0]:
+            # Get the region of interest (ROI) in the frame where the health image will go
+            roi = frame[y_offset:y_offset + resized_health_image.shape[0], x_offset:x_offset + resized_health_image.shape[1]]
+
+            if has_alpha:
+                # Create a mask of the health image where the alpha channel is not 0
+                alpha_mask = resized_health_image[:, :, 3] / 255.0  # Normalize alpha channel to range [0, 1]
+                alpha_mask = np.dstack([alpha_mask, alpha_mask, alpha_mask])  # Convert to 3 channels (RGB)
+
+                # Blend the health image with the frame using the alpha mask
+                for c in range(3):  # Iterate over RGB channels
+                    roi[:, :, c] = roi[:, :, c] * (1 - alpha_mask[:, :, c]) + resized_health_image[:, :, c] * alpha_mask[:, :, c]
+            else:
+                # If no alpha channel, we assume full opacity, so no blending required
+                roi[:, :, :3] = resized_health_image[:, :, :3]  # Only copy the RGB channels
+
+            # Place the blended image back into the frame
+            frame[y_offset:y_offset + resized_health_image.shape[0], x_offset:x_offset + resized_health_image.shape[1]] = roi
+
+    return frame
     
 ## Laser from boss ##
 lasers = []
@@ -736,20 +915,62 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
     
     return boss_state, state_change_time
 
+def show_text(frame, isDone):
+    global show_text_start_time
+    
+    text = "Cheat Activated"
+    duration = 3  # Seconds
+    
+    if show_text_start_time is None:
+        show_text_start_time = time.time()
+        print("Start time initialized:", show_text_start_time)
+
+    # Get the current time
+    current_time = time.time()
+
+    # Check if the duration has passed
+    if current_time - show_text_start_time < duration and not isDone:
+        # Put text on the bottom-right corner
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 1
+        font_color = (255, 255, 255)  # White text
+        thickness = 2
+        text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+        
+        # Positioning the text at the bottom-right corner
+        text_x = frame.shape[1] - text_size[0] - 10  # 10 pixels from the right
+        text_y = frame.shape[0] - 10  # 10 pixels from the bottom
+
+        # Debug: Print text position to verify if it's visible on the screen
+        print(f"Text position: ({text_x}, {text_y})")
+        
+        # Display the text on the frame
+        cv2.putText(frame, text, (text_x, text_y), font, font_scale, font_color, thickness)
+    else:
+        # Reset the start time after duration
+        show_text_start_time = None
+        isDone = True
+    
+    return frame, isDone
+
 # Function to scroll the background and move the player
 def scroll_background(camera, socketio):
     global player_x, player_y, shots, player_image, boss_x, boss_y, boss_health, boss_rotation_angle, boss_image, boss_state, state_change_time, boss_image_index
-    global state_change_time
+    global state_change_time, isDead, last_player_y, isCheat, isCheatTriggered
     
     isAlreadyCenter = False
     
     x_offset = 0
     sensitivity = 10  # Adjust sensitivity here
     last_player_x = player_x  # Track the last x position for flip decision
+    last_player_y
     last_facing_direction = "right"  # Track the player's last facing direction (default is right)
     
     print("Initial state: ", boss_state)
+    load_animation_images()
     
+    isDone = False
+
     while True:
         # Move the image by changing the x_offset
         x_offset -= 10  # Adjust speed here
@@ -771,8 +992,8 @@ def scroll_background(camera, socketio):
         resized_frame = cv2.resize(frame, (video_width, video_height))
 
         # Detect hand gestures
-        right_hand_position, left_hand_gesture = detect_hand_gesture(frame)
-
+        right_hand_position, left_hand_gesture, right_hand_gesture = detect_hand_gesture(frame)
+        
         # Move the player image based on the right hand's index finger position
         if right_hand_position:
             adjusted_x = video_width - (right_hand_position[0] + player_image.shape[1] // 2)
@@ -785,30 +1006,70 @@ def scroll_background(camera, socketio):
         player_x = max(0, min(player_x, video_width - player_image.shape[1]))
         player_y = max(0, min(player_y, video_height - player_image.shape[0]))
 
-        # Determine the player's facing direction and flip if needed
-        if player_x < last_player_x:
-            last_facing_direction = "left"
-            player_image_flipped = cv2.flip(player_image, 1)
+        # Ensure player_image_flipped is initialized
+        player_image_flipped = player_image  # Default to the normal player image
+
+        # Only allow movement and actions when the player is not dead
+        if not isDead:
+            # Horizontal movement: flip based on direction
+            if player_x < last_player_x:
+                last_facing_direction = "left"
+                player_image_flipped = cv2.flip(player_image, 1)
+            elif player_x > last_player_x:
+                last_facing_direction = "right"
+                player_image_flipped = player_image
+
+            last_player_x = player_x
+
+            # Vertical movement: update player_y
+            if right_hand_position:
+                adjusted_x = video_width - (right_hand_position[0] + player_image.shape[1] // 2)
+                player_x += (adjusted_x - player_x) // sensitivity  # Smooth player movement
+
+                adjusted_y = right_hand_position[1] - player_image.shape[0] // 2
+                player_y = adjusted_y
+                last_player_y = player_y
+
+            # Create the shot if the left hand is detected as a fist
+            if left_hand_gesture == "fist":
+                shoot(player_x, player_y, last_facing_direction)
+                
+            if right_hand_gesture == "cheat" and isCheatTriggered == False:
+                print("Activate cheat")
+                isCheat = True
+                isCheatTriggered = True
+                isDone = False
+
+        # If the player is dead, prevent any further movement or actions
         else:
-            last_facing_direction = "right"
-            player_image_flipped = player_image
-
-        last_player_x = player_x
-
-        # Create the shot if the left hand is detected as a fist
-        if left_hand_gesture == "fist":
-            shoot(player_x, player_y, last_facing_direction)
+            # Keep the player in the current position, do not change player_x or player_y
+            player_image_flipped = player_image  # Keep the image static
+            last_facing_direction = last_facing_direction  # Maintain the previous facing direction
+            
+            player_x = last_player_x
+            player_y = last_player_y
 
         # Draw the background and player image
         combined_frame = resized_bg.copy()
 
-        # Overlay the player image
-        for c in range(0, 3):
-            combined_frame[player_y:player_y + player_image_flipped.shape[0], player_x:player_x + player_image_flipped.shape[1], c] = \
-                combined_frame[player_y:player_y + player_image_flipped.shape[0], player_x:player_x + player_image_flipped.shape[1], c] * (1 - player_image_flipped[:, :, 3] / 255.0) + \
-                player_image_flipped[:, :, c] * (player_image_flipped[:, :, 3] / 255.0)
+        # Ensure player image fits in the frame (handling index bounds)
+        player_height, player_width = player_image_flipped.shape[:2]
 
-        # Ensure the boss image is within the frame boundaries
+        # Clamp player position to ensure it stays within the background bounds
+        player_x = max(0, min(player_x, video_width - player_width))
+        player_y = max(0, min(player_y, video_height - player_height))
+
+        # Ensure the player image doesn't exceed the background size
+        if player_y + player_height <= video_height and player_x + player_width <= video_width:
+            # Proceed only if player image fits within the frame
+            for c in range(0, 3):
+                # Blend player image with the background using the alpha channel
+                combined_frame[player_y:player_y + player_height, player_x:player_x + player_width, c] = \
+                    combined_frame[player_y:player_y + player_height, player_x:player_x + player_width, c] * (1 - player_image_flipped[:, :, 3] / 255.0) + \
+                    player_image_flipped[:, :, c] * (player_image_flipped[:, :, 3] / 255.0)
+        else:
+            print("Error: player image exceeds background bounds")
+
         # First, ensure we have a valid boss_width and boss_height before using them.
         if 'boss_width' not in locals() or 'boss_height' not in locals():
             boss_width, boss_height = boss_image.shape[1], boss_image.shape[0]
@@ -883,6 +1144,48 @@ def scroll_background(camera, socketio):
         remove_offscreen_bullets()
         
         draw_health_bar(combined_frame, boss_health, max_health, health_bar_y, health_bar_width, health_bar_height)
+        
+        if not isDone and isCheatTriggered == True:
+            global show_text_start_time
+            
+            text = "Cheat Activated"
+            duration = 3  # Seconds
+            
+            if show_text_start_time is None:
+                show_text_start_time = time.time()
+                print("Start time initialized:", show_text_start_time)
+
+            # Get the current time
+            current_time = time.time()
+
+            # Check if the duration has passed
+            if current_time - show_text_start_time < duration:
+                # Put text on the bottom-right corner
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_scale = 1
+                font_color = (255, 255, 255)
+                thickness = 2
+                text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+                
+                # Positioning the text at the bottom-right corner
+                text_x = combined_frame.shape[1] - text_size[0] - 20  # 10 pixels from the right
+                text_y = combined_frame.shape[0] - 70  # 50 pixels from the bottom (adjusted)
+                
+                rect_color = (130, 130, 130)  # grey rectangle
+                rect_thickness = -1  # Filled rectangle
+                cv2.rectangle(combined_frame, (text_x - 5, text_y - text_size[1] - 5), 
+                            (text_x + text_size[0] + 5, text_y + 5), rect_color, rect_thickness)
+
+                # Display the text on the frame
+                cv2.putText(combined_frame, text, (text_x, text_y), font, font_scale, font_color, thickness)
+            else:
+                # Reset the start time after duration
+                show_text_start_time = None
+                isDone = True
+        
+        #player health
+        combined_frame, isDead = check_collisions_and_update_health(socketio, combined_frame)
+        combined_frame = draw_health(combined_frame)
 
         # Return the combined frame for displaying in Flask template
         yield (b'--frame\r\n'

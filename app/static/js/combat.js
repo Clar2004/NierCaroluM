@@ -31,7 +31,10 @@ setTimeout(() => {
 
 socket.on('redirect_to_menu', function (data) {
    console.log("Boss Defeated:", data);
-   window.location.href = "/";
+
+   setTimeout(function () {
+      window.location.href = "/";
+   }, 3000);
 });
 
 window.addEventListener("beforeunload", (event) => {
