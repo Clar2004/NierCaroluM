@@ -137,7 +137,7 @@ def generate_maze_interaction_frames(socketio):
                     # If the game hasn't started yet, check if user touches any entry point
                     if not game_started:
                         for point in entry_points:
-                            px, py = point
+                            px, py = point 
                             distance = np.sqrt((tip_x - px) ** 2 + (tip_y - py) ** 2)
                             if distance <= 20:  # If the finger touches the entry circle
                                 game_started = True

@@ -17,6 +17,7 @@ from processing.threshold_processing import (
 )
 from threading import Lock
 from processing.edge_corner_processing import generate_maze_interaction_frames
+from processing.combat import scroll_background
 
 lock = Lock()
 
@@ -178,6 +179,38 @@ def edge_corner_feed():
     try:
         return Response(
             generate_maze_interaction_frames(socketio),
+            mimetype='multipart/x-mixed-replace; boundary=frame',
+        )
+    except Exception as e:
+        print(f"Error during frame generation: {e}")
+        return Response(
+            "An error occurred while streaming frames.",
+            status=500,  # Internal Server Error
+        )
+        
+## Combat routes ##
+@app.route('/combat')
+def combat_page():
+    return render_template('combat.html')
+
+@app.route('/combat_feed')
+def combat_feed():
+    global camera
+
+    # Check if the camera is opened
+    if not camera.isOpened():
+        camera.open(0)
+        if not camera.isOpened():
+            print("Error: Camera not opened or unavailable.")
+            return Response(
+                "Camera not available. Please ensure the camera is connected and not used by another application.",
+                status=503,  # 503 Service Unavailable
+            )
+
+    # Generate and stream frames with the scrolling background
+    try:
+        return Response(
+            scroll_background(camera, socketio),
             mimetype='multipart/x-mixed-replace; boundary=frame',
         )
     except Exception as e:
