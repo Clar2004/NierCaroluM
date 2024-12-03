@@ -19,14 +19,13 @@
         <span class="prompt">codebind@code:~$</span>
         <input
           type="text"
-          id="decoded-message"
+          id="message-input"
           onkeydown="handleKeyPress(event)"
           autocomplete="off"
         />
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='js/threshold.js') }}"></script>
 
     <div class="game-container">

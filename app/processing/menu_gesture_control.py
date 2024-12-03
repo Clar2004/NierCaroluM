@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 from threading import Lock
+import pygame
+from flask_socketio import SocketIO
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -23,12 +25,11 @@ def is_one_finger(landmarks):
     return index_tip < index_mcp and thumb_tip > index_tip and middle_tip > index_tip
 
 # Gesture Detection Function
-def detect_gestures(socketio):
+def detect_gestures(cap):
     print("Gesture detection thread started")
-    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Error: Could not open video capture")
-        socketio.emit('error', {'message': 'Camera initialization failed'})
+        # socketio.emit('error', {'message': 'Camera initialization failed'})
         return
 
     # Get screen resolution dynamically
@@ -57,17 +58,17 @@ def detect_gestures(socketio):
                     if is_pinch(hand_landmarks.landmark):
                         if (last_emitted['x'], last_emitted['y'], last_emitted['gesture']) != (cursor_x, cursor_y, 'pinch'):
                             with socketio_lock:
-                                socketio.emit('move_cursor', {'x': cursor_x, 'y': cursor_y})
+                                # socketio.emit('move_cursor', {'x': cursor_x, 'y': cursor_y})
                                 last_emitted.update({'x': cursor_x, 'y': cursor_y, 'gesture': 'pinch'})
-                                socketio.sleep(0.01)
+                                # socketio.sleep(0.01)
 
                     # One finger gesture detection
                     elif is_one_finger(hand_landmarks.landmark):
                         if (last_emitted['x'], last_emitted['y'], last_emitted['gesture']) != (cursor_x, cursor_y, 'click'):
                             with socketio_lock:
-                                socketio.emit('click', {'x': cursor_x, 'y': cursor_y})
+                                # socketio.emit('click', {'x': cursor_x, 'y': cursor_y})
                                 last_emitted.update({'x': cursor_x, 'y': cursor_y, 'gesture': 'click'})
-                                socketio.sleep(0.01)
+                                # socketio.sleep(0.01)
 
             # Quit on 'q' key press
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -76,6 +77,6 @@ def detect_gestures(socketio):
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        cap.release()
+        # cap.release()
         cv2.destroyAllWindows()
         print("Camera and resources released.")

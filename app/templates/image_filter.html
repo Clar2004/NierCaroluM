@@ -22,13 +22,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='js/image_filter.js') }}"></script>
-
+    
     <!-- Game Container Section -->
+    <script src="{{ url_for('static', filename='js/image_filter.js') }}"></script>
     <div class="game-container">
-        <img id="video" src="/video_feed" alt="Video Feed" onload="enableInput()" />
+        <img id="video" src="{{ url_for('video_feed')}}" alt="Video Feed" onload="enableInput()" />
     </div>
-
+    
 </body>
 </html>

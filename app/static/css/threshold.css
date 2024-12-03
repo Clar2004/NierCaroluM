@@ -46,7 +46,7 @@ body {
    /* Green terminal prompt color */
 }
 
-#decoded-message {
+#message-input {
    background-color: transparent;
    /* Dark input background */
    color: #ffffff;

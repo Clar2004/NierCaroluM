@@ -1,58 +1,29 @@
+const sse = new EventSource('/sse_game_status');
 
-const socket = io("http://127.0.0.1:5000", {
-   transports: ["websocket"],
-   reconnectionDelay: 2000,
-});
-
-console.log("Socket.IO connected:", socket);
-
-socket.on('connect', () => {
-   console.log("Socket.IO connected2:", socket.connected);
-});
-
-socket.on('test', function (data) {
-   console.log("Test event received:", data);
-});
-
-socket.on('connect_error', (err) => {
-   console.error("Connection failed: ", err);
-});
-
-socket.on('disconnect', () => {
-   console.log("Disconnected from server");
-});
-
-setTimeout(() => {
-   const videoContainer = document.createElement('div');
-   videoContainer.className = 'game-container';
-   videoContainer.innerHTML = '<img class="video-feed" src="/combat_feed" alt="Maze Game Feed">';
-   document.body.appendChild(videoContainer);
-}, 2000);
-
-socket.on('redirect_to_menu', function (data) {
-   console.log("Boss Defeated:", data);
-
-   setTimeout(function () {
+sse.onmessage = function (event) {
+   console.log("Status:", event.data);
+   if (event.data === "game_one") {
+      // sse.close();
+      window.location.href = "/image_filter";
+   }
+   else if (event.data === "game_two") {
+      // sse.close();
+      window.location.href = "/threshold";
+   }else if(event.data === "game_three"){
+      // sse.close();
+      window.location.href = "/edge_corner";
+   }else if(event.data === "dead"){
       window.location.href = "/";
-   }, 3000);
-});
+   }
 
-window.addEventListener("beforeunload", (event) => {
-   const url = "/release_camera";
-   navigator.sendBeacon(url);
-   console.log("Camera release request sent using Beacon API.");
+   //bisa tambah lagi
+};
 
-   setTimeout(() => {
-      console.log("Page is unloading...");
-   }, 200);
-});
+sse.onerror = function () {
+   console.error("SSE connection failed");
+   sse.close(); // Close SSE connection on error
+};
 
-window.addEventListener("load", () => {
-   fetch("/initialize_camera", {
-      method: "POST",
-   }).then((response) => {
-      if (response.ok) {
-         console.log("Camera initialized.");
-      }
-   });
-});
+function forcePageRefresh() {
+   window.location.reload(true);  // The true parameter forces a hard reload
+}

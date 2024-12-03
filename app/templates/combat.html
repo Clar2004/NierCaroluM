@@ -8,8 +8,8 @@
 </head>
 <body>
 
-    <script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='js/combat.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/combat.js') }}"></script>
+  <img class="video-feed" src="{{url_for('combat_feed')}}" alt="Maze Game Feed">
 
 </body>
 </html>

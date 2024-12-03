@@ -1,70 +1,7 @@
-const socket = io("http://127.0.0.1:5000", {
-   transports: ["websocket"],
-   reconnectionDelay: 2000,
-});
-
-console.log("Socket.IO connected:", socket);
-
-socket.on('connect', () => {
-   console.log("Socket.IO connected2:", socket.connected);
-});
-
-socket.on('test', function (data) {
-   console.log("Test event received:", data);
-});
-
-socket.on('connect_error', (err) => {
-   console.error("Connection failed: ", err);
-});
-
-socket.on('disconnect', () => {
-   console.log("Disconnected from server");
-});
-
-setTimeout(() => {
-   const videoContainer = document.createElement('div');
-   videoContainer.className = 'game-container';
-   videoContainer.innerHTML = '<img id="video" src="/maze_game_feed" alt="Maze Game Feed">';
-   document.body.appendChild(videoContainer);
-}, 2000);
-
-window.addEventListener("beforeunload", (event) => {
-   const url = "/release_camera";
-   navigator.sendBeacon(url); // Ensure the camera release request is sent
-   console.log("Camera release request sent using Beacon API.");
-
-   setTimeout(() => {
-      console.log("Page is unloading...");
-   }, 200);
-});
-
-function goBack() {
-   
-   const url = "/release_camera";
-   navigator.sendBeacon(url); // Ensure the camera release request is sent
-   console.log("Camera release request sent using Beacon API.");
-
-   setTimeout(() => {
-      console.log("Page is unloading...");
-   }, 200);
-
-   window.history.back();
-}
-
-// Handle CPU reached event
-socket.on('cpu_reached', function (data) {
-   console.log("CPU reached event received:", data);
-   window.location.href = "/";
-});
-
-// Handle health update
-socket.on('health_update', function (data) {
-   console.log("Health update event received:", data);
+function updateHealth(currentHealth) {
 
    const healthContainer = document.getElementById('health-container');
    if (healthContainer) {
-      // Get the current health value
-      const currentHealth = data.health;
       const icons = healthContainer.getElementsByClassName('health-icon');
 
       // Hide the health container if health is 0
@@ -82,9 +19,58 @@ socket.on('health_update', function (data) {
             }
          }
       }
-
-      console.log("Health updated to ", currentHealth);
-   } else {
-      console.error("Failed to update health, health container not found.");
+      console.log("Health updated to", currentHealth);
    }
-});
+}
+
+setTimeout(() => {
+   const videoContainer = document.createElement('div');
+   videoContainer.className = 'game-container';
+   videoContainer.innerHTML = '<img id="video" src="/maze_game_feed" alt="Maze Game Feed">';
+   document.body.appendChild(videoContainer);
+}, 100);
+
+function showCheatText() {
+      const cheatTextElement = document.getElementById('cheat-text');
+
+      // Ensure data.message is available and then show the cheat text
+      if (cheatTextElement ) {
+         cheatTextElement.textContent = "Cheat code activated!";
+         cheatTextElement.style.display = 'block';
+
+         // Hide cheat text after 3 seconds
+         setTimeout(() => {
+            cheatTextElement.style.display = 'none';
+         }, 3000);
+      }
+}
+
+const sse = new EventSource('/sse_mini_game_three');
+
+sse.onmessage = function (event) {
+   console.log("Status:", event.data);
+
+   if (event.data === "redirect") {
+      // sse.close();
+      window.location.href = "/combat";
+   }
+
+   if (event.data === "cheat") {
+      showCheatText();
+   }
+
+   if (event.data === "zero") {
+      updateHealth(0);
+   } else if (event.data === "one") {
+      updateHealth(1);
+   } else if (event.data === "two") {
+      updateHealth(2);
+   } else if (event.data === "three") {
+      updateHealth(3);
+   }
+};
+
+sse.onerror = function () {
+   console.error("SSE connection failed");
+   sse.close(); // Close SSE connection on error
+};

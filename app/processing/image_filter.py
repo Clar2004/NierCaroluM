@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import mediapipe as mp
-from threading import Lock
 from scipy.signal import wiener
+import pygame
 
 # MediaPipe Hands initialization
 mp_hands = mp.solutions.hands
@@ -13,7 +13,6 @@ filter_type = "gaussian"  # Default filter type
 filter_radius = 50  # Default filter radius
 base_image = None
 blurred_image = None
-camera_lock = Lock()
 circle_center = (320, 240)
 
 def initialize_base_image(image_path, blur_strength=51):
@@ -94,11 +93,10 @@ def process_frame(camera):
     global filter_radius, circle_center, blurred_image, base_image
     kernel_size = 0  # Default kernel size (no blur)
 
-    with camera_lock:
-        success, frame = camera.read()
-        if not success:
-            print("Failed to capture frame from camera.")
-            return None
+    success, frame = camera.read()
+    if not success:
+        print("Failed to capture frame from camera.")
+        return None
 
     frame = cv2.flip(frame, 1)  # Flip for a mirrored view
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -119,7 +117,7 @@ def process_frame(camera):
         for hand in hands_data:
             landmarks = hand["landmarks"]
             hand_label = hand["label"]
-            print(f"Detected {hand_label} hand.")
+            # print(f"Detected {hand_label} hand.")
 
             if hand_label == "Left":
                 # Detect raised fingers
@@ -136,7 +134,7 @@ def process_frame(camera):
                 if kernel_size > 0 and kernel_size % 2 == 0:
                     kernel_size += 1
 
-                print(f"Left hand detected: {fingers_up} fingers up. Kernel size: {kernel_size}")
+                # print(f"Left hand detected: {fingers_up} fingers up. Kernel size: {kernel_size}")
 
             elif hand_label == "Right":
                 # Control pinch radius and center with right hand
@@ -148,7 +146,7 @@ def process_frame(camera):
                     [thumb_tip.x - index_tip.x, thumb_tip.y - index_tip.y]
                 )
                 filter_radius = max(10, min(int(pinch_distance * 200), min(base_image.shape[1], base_image.shape[0]) // 2))
-                print(f"Pinch radius set to {filter_radius}.")
+                # print(f"Pinch radius set to {filter_radius}.")
 
                 # Calculate dynamic circle center
                 x_center = int((thumb_tip.x + index_tip.x) / 2 * base_image.shape[1])
@@ -167,6 +165,14 @@ def generate_frames(camera):
     """
     Generate video frames for the Flask route.
     """
+    
+    # Initialize the mixer for pygame
+    pygame.mixer.init()
+
+    # Load the music file
+    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.play(loops=-1, start=0.0)
+    
     while True:
         processed_frame = process_frame(camera)
         if processed_frame is None:

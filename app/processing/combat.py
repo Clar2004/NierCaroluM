@@ -6,11 +6,12 @@ import time
 from ball import RedBall
 import math
 import os
+import pygame
 
-lock = Lock()
+
 SHOT_COOLDOWN = 0.3
 last_shot_time = 0
-socketio_lock = Lock()
+# socketio_lock = Lock()
 
 # Load player and shot images
 player_image = cv2.imread("static/assets/combat_assets/Player.png", cv2.IMREAD_UNCHANGED)  # Assuming it's a PNG with transparency
@@ -94,8 +95,8 @@ health_bar_x = 50  # X-position of the health bar
 health_bar_y = 50  # Y-position of the health bar
 
 # Maximum health value for the boss
-max_health = 5000
-boss_health = 5000
+max_health = 1000
+boss_health = 1000
 
 #load the circle image
 red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_UNCHANGED) 
@@ -130,6 +131,10 @@ frame_delay = 300  # Delay between frames in milliseconds (adjust as needed)
 
 show_text_start_time = None
 
+isGameTwoDone = False
+isGameThreeDone = False
+
+
 def load_animation_images():
     global animation_images
     for filename in sorted(os.listdir(animation_folder)):
@@ -161,7 +166,7 @@ def run_death_animation(frame_list, x, y, combined_frame):
             
     return combined_frame
 
-def check_collisions_and_update_health(socketio, combined_frame):
+def check_collisions_and_update_health( combined_frame, hit_sound):
     """Check for collisions with lasers or red balls and reduce health."""
     global player_health, lasers, red_balls, animation_images, player_x, player_y, isDead, isCheat
 
@@ -170,11 +175,14 @@ def check_collisions_and_update_health(socketio, combined_frame):
         if is_collision_with_player(laser) and not isCheat:  # Check if laser hits the player
             lasers.remove(laser)  # Remove the laser from the game
             player_health -= 1  # Decrease health
+            hit_sound.set_volume(0.6)
+            hit_sound.play()
             if player_health <= 0:
                 isDead = True
+                pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
-                socketio.emit('redirect_to_menu', {'message': 'Boss defeated!'})
-                socketio.sleep(0.0001)
+                from app import player_dead
+                player_dead()
             break  # Break to prevent multiple health reductions for one collision
 
     # Check for collisions with red balls
@@ -182,20 +190,26 @@ def check_collisions_and_update_health(socketio, combined_frame):
         if is_collision_with_player(red_ball) and not isCheat:  # Check if red ball hits the player
             red_balls.remove(red_ball)  # Remove the red ball
             player_health -= 1  # Decrease health
+            hit_sound.set_volume(0.6)
+            hit_sound.play()
             if player_health <= 0:
-                isDead = True
+                pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
-                socketio.emit('redirect_to_menu', {'message': 'Boss defeated!'})
-                socketio.sleep(0.0001)
+                from app import player_dead
+                player_dead()
+
             break  # Break to prevent multiple health reductions for one collision
     
     if is_collision_with_boss() and not isCheat:
         # If player collides with the boss, directly set health to 0
         player_health = 0
         isDead = True
+        hit_sound.set_volume(0.6)
+        hit_sound.play()
+        pygame.mixer.music.stop()
         run_death_animation(animation_images, player_x, player_y, combined_frame)
-        socketio.emit('redirect_to_menu', {'message': 'Game Over!'})
-        socketio.sleep(0.0001)
+        from app import player_dead
+        player_dead()
     
     return combined_frame, isDead
 
@@ -369,38 +383,40 @@ def detect_hand_gesture(frame):
                     abs(middle_finger_tip.x - ring_finger_tip.x) < 0.05 and
                     abs(ring_finger_tip.x - pinky_finger_tip.x) < 0.05):
                     left_hand_gesture = "fist"
-                    
-                # Detect index and middle finger going up (peace sign)
-                if index_finger_tip.y < middle_finger_tip.y:
-                    right_hand_gesture = "cheat"
-                    
-            # Draw hand landmarks (optional, for debugging)
-            mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                
+                elif (index_finger_tip.y < middle_finger_tip.y and   # Index finger is above middle finger
+                    index_finger_tip.y < ring_finger_tip.y and     # Index finger is above ring finger
+                    index_finger_tip.y < pinky_finger_tip.y and    # Index finger is above pinky finger
+                    middle_finger_tip.y < ring_finger_tip.y and    # Middle finger is above ring finger
+                    middle_finger_tip.y < pinky_finger_tip.y and   # Middle finger is above pinky finger
+                    abs(index_finger_tip.x - middle_finger_tip.x) > 0.1):  # Fingers should be apart (distance threshold)
+                    right_hand_gesture = "cheat" #(peace sign)
 
     return right_hand_position, left_hand_gesture, right_hand_gesture
 
 # Function to create and fire a shot with a cooldown mechanism
-def shoot(shot_x, shot_y, direction):
+def shoot(shot_x, shot_y, direction, shoot_sound):
     global last_shot_time
     
     current_time = time.time()  # Get the current time in seconds
     
-    # Check if enough time has passed since the last shot
-    if current_time - last_shot_time >= SHOT_COOLDOWN:
-        # If cooldown is over, fire the shot
-        if direction == "right":
-            shot_x += player_image.shape[1]  # Adjust shot_x to be in front of the spaceship when facing right
-        else:
-            shot_x -= shot_image.shape[1]  # Adjust shot_x to be in front of the spaceship when facing left
-        
-        # Add the shot to the list with its direction
-        shots.append([shot_x, shot_y, direction])
+    if current_time - last_shot_time < 0.5:
+        return 
+    
+    shoot_sound.play()  # Play the shooting sound
 
-        # Update the time of the last shot
-        last_shot_time = current_time
+    # If cooldown is over, fire the shot
+    if direction == "right":
+        shot_x += player_image.shape[1]  # Adjust shot_x to be in front of the spaceship when facing right
     else:
-        # If cooldown has not elapsed, skip firing the shot
-        pass
+        shot_x -= shot_image.shape[1]  # Adjust shot_x to be in front of the spaceship when facing left
+    
+    # Add the shot to the list with its direction
+    shots.append([shot_x, shot_y, direction])
+
+    # Update the time of the last shot
+    last_shot_time = current_time
+
     
 boss_height, boss_width, _ = boss_image.shape
 
@@ -500,7 +516,7 @@ def show_animation(frame_list, x, y, combined_frame):
                 combined_frame[y:y+h, x:x+w, c] * (1 - frame[:, :, 3] / 255.0) + \
                 frame[:, :, c] * (frame[:, :, 3] / 255.0)
         
-def check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot_image, combined_frame, socketio):
+def check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot_image, combined_frame, hit_sound):
     """
     Check if any shot collides with the boss using detailed edge-based collision detection.
     """
@@ -532,7 +548,7 @@ def check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot
                     if (shot_x < contour_x < shot_x + shot_image.shape[1] and
                         shot_y < contour_y < shot_y + shot_image.shape[0]):
                         # Handle the collision (e.g., show animation or reduce boss health)
-                        reduce_boss_health(10, socketio)
+                        reduce_boss_health(10, hit_sound)
 
                         # Play the animation for the shot hit
                         show_animation([shot2_exp2, shot2_exp3, shot2_exp4, shot2_exp5], shot_x, shot_y, combined_frame)
@@ -546,12 +562,12 @@ def check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot
                         # Return after handling the first collision (to avoid multiple hits)
                         return
 
-def check_boss_shot_collision(shots, boss_x, boss_y, boss_width, boss_height, boss_image, shot_image, combined_frame, socketio):
+def check_boss_shot_collision(shots, boss_x, boss_y, boss_width, boss_height, boss_image, shot_image, combined_frame, hit_sound):
     """
     Check for both edge-based and fallback simple AABB collision detection.
     """
     # First, attempt the edge-based collision detection
-    check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot_image, combined_frame, socketio)
+    check_boss_shot_collision_with_edges(shots, boss_x, boss_y, boss_image, shot_image, combined_frame, hit_sound)
     
 def rotate_boss_image(image, angle):
     """ Rotate the boss image by a given angle (clockwise). """
@@ -560,16 +576,19 @@ def rotate_boss_image(image, angle):
     rotated_image = cv2.warpAffine(image, rotation_matrix, (image.shape[1], image.shape[0]))  # Apply rotation
     return rotated_image
 
-def reduce_boss_health(amount, socketio):
+def reduce_boss_health(amount, hit_sound):
     """
     Reduces the boss's health when a shot hits.
     Ensures health does not drop below 0.
     """
     global boss_health
+    
+    hit_sound.set_volume(0.6)
+    hit_sound.play()
     boss_health = max(0, boss_health - amount)
     if (boss_health <= 0) :
-        socketio.emit('redirect_to_menu', {'message': 'Boss defeated!'})
-        socketio.sleep(0.0001)
+        from app import player_dead
+        player_dead()
         print("Boss defeated! message sent")
     
 def draw_health_bar(frame, health, max_health, health_bar_y, health_bar_width, health_bar_height):
@@ -777,7 +796,7 @@ def draw_lasers(frame):
                         alpha_channel[:valid_y_end - valid_y_start, :valid_x_end - valid_x_start] * \
                         red_ball_rgb[:valid_y_end - valid_y_start, :valid_x_end - valid_x_start, c]
 
-def update_boss_state(boss_state, state_change_time, current_time, combined_frame):
+def update_boss_state(boss_state, state_change_time, current_time, combined_frame, boss_change_sound):
     global boss_image, boss_image_index, laser_image, lasers, boss_rotation_angle
 
     # Handle shooting state
@@ -829,6 +848,8 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
             draw_red_balls(combined_frame)
             move_lasers()
             draw_lasers(combined_frame)
+            boss_change_sound.set_volume(0.5)
+            boss_change_sound.play()
             
     elif boss_state == BOSS_STATE_IMAGE_CHANGE2:
         if current_time - state_change_time >= image_change_duration:
@@ -954,11 +975,31 @@ def show_text(frame, isDone):
     return frame, isDone
 
 # Function to scroll the background and move the player
-def scroll_background(camera, socketio):
+
+def scroll_background(camera, isReset):
     global player_x, player_y, shots, player_image, boss_x, boss_y, boss_health, boss_rotation_angle, boss_image, boss_state, state_change_time, boss_image_index
     global state_change_time, isDead, last_player_y, isCheat, isCheatTriggered
+    global max_health, isGameTwoDone, isGameThreeDone, lasers, red_balls, boss_width, player_health
     
     isAlreadyCenter = False
+    
+    if isReset:
+        # Player initial position (middle left)
+        player_x = 100  # x position at the left side of the screen
+        player_y = video_height // 2  # y position at the center
+        last_player_y = player_y
+        player_health = 5
+        
+        boss_x = video_width - boss_width - 50  # 50 pixels from the right edge
+        boss_y = video_height // 4  # Fixed vertical position (you can adjust this based on your needs)
+        boss_rotation_angle = 0
+        boss_state = BOSS_STATE_IDLE_INITIAL
+        lasers = []
+        red_balls = []
+        
+        isCheat = False
+        isCheatTriggered = False
+        isDead = False
     
     x_offset = 0
     sensitivity = 10  # Adjust sensitivity here
@@ -970,8 +1011,38 @@ def scroll_background(camera, socketio):
     load_animation_images()
     
     isDone = False
+    
+    pygame.mixer.init()
+    
+    pygame.mixer.music.load("static/assets/sound/boss_bg.mp3")
+    pygame.mixer.music.play(loops=-1, start=0.0)
+    
+    shoot_sound = pygame.mixer.Sound("static/assets/sound/shoot_sound.mp3")
+    boss_change_sound = pygame.mixer.Sound("static/assets/sound/boss_change_sound.mp3")
+    hit_sound = pygame.mixer.Sound("static/assets/sound/dead_sound.mp3")
 
     while True:
+        from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
+        from app import change_game_three_state, is_game_three_done
+        
+        if boss_health <= max_health*0.8 and is_game_one_done == False:
+            change_game_one_state()
+            # change_game_three_state()
+            
+            # socketio.emit('game_1', {'message': 'Game 1!'})
+            # socketio.sleep(0.0001)
+            print("Redirect to Game 1")
+        elif boss_health <= max_health*0.6 and is_game_two_done == False:
+            # socketio.emit('game_2', {'message': 'Game 1!'})
+            # socketio.sleep(0.0001)
+            change_game_two_state()
+            print("Redirect to Game 2")
+        elif boss_health <= max_health*0.4 and is_game_three_done == False:
+            # socketio.emit('game_3', {'message': 'Game 1!'})
+            # socketio.sleep(0.0001)
+            change_game_three_state()
+            print("Redirect to Game 3")
+        
         # Move the image by changing the x_offset
         x_offset -= 10  # Adjust speed here
         if x_offset <= -bg_width:
@@ -987,6 +1058,8 @@ def scroll_background(camera, socketio):
         ret, frame = camera.read()
         if not ret:
             break
+        
+        # frame = cv2.flip(frame, 1)
         
         # Resize the webcam feed to fit the video dimensions
         resized_frame = cv2.resize(frame, (video_width, video_height))
@@ -1032,7 +1105,7 @@ def scroll_background(camera, socketio):
 
             # Create the shot if the left hand is detected as a fist
             if left_hand_gesture == "fist":
-                shoot(player_x, player_y, last_facing_direction)
+                shoot(player_x, player_y, last_facing_direction, shoot_sound)
                 
             if right_hand_gesture == "cheat" and isCheatTriggered == False:
                 print("Activate cheat")
@@ -1098,12 +1171,12 @@ def scroll_background(camera, socketio):
         boss_width = int(boss_width)
         boss_height = int(boss_height)
         
-        check_boss_shot_collision(shots, boss_x, boss_y, boss_width, boss_height, boss_image, shot_image, combined_frame, socketio)
+        check_boss_shot_collision(shots, boss_x, boss_y, boss_width, boss_height, boss_image, shot_image, combined_frame, hit_sound)
 
         rotated_boss_image, isAlreadyCenter = move_boss(isAlreadyCenter)
         
         current_time = time.time()
-        boss_state, state_change_time = update_boss_state(boss_state, state_change_time, current_time, combined_frame)
+        boss_state, state_change_time = update_boss_state(boss_state, state_change_time, current_time, combined_frame, boss_change_sound)
                 
         # Ensure the boss image is within the frame boundaries
         rotated_boss_image_height = int(rotated_boss_image.shape[0])
@@ -1184,7 +1257,7 @@ def scroll_background(camera, socketio):
                 isDone = True
         
         #player health
-        combined_frame, isDead = check_collisions_and_update_health(socketio, combined_frame)
+        combined_frame, isDead = check_collisions_and_update_health(combined_frame, hit_sound)
         combined_frame = draw_health(combined_frame)
 
         # Return the combined frame for displaying in Flask template

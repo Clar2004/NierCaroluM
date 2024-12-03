@@ -3,6 +3,7 @@ import numpy as np
 import mediapipe as mp
 from threading import Lock
 from collections import deque
+import pygame
 
 # MediaPipe initialization
 mp_hands = mp.solutions.hands
@@ -42,6 +43,12 @@ def generate_threshold_frames(camera, frame_width=800, frame_height=600):
     Generator for streaming thresholded frames to the frontend.
     """
     global threshold_level, input_image, previous_x, thumb_path, line_alpha
+    
+    pygame.mixer.init()
+
+    # Load the music file
+    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.play(loops=-1, start=0.0)
 
     while True:
         success, frame = camera.read()

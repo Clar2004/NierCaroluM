@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Matching Game</title>
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/image_matching.css') }}">
+</head>
+<body>
+   <img id="video-feed" src="{{ url_for('match_video_feed') }}" alt="Video Feed">
+   <script src="{{ url_for('static', filename='js/image_matching.js') }}"></script>
+  

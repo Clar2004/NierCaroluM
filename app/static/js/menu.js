@@ -44,9 +44,9 @@ function handleButtonClick(event, url) {
       loadingOverlay.style.display = 'flex';
 
       // Redirect to the specified URL after showing the overlay
-      setTimeout(() => {
-         loadingOverlay.style.display = 'none'; // Optionally hide overlay again
-         window.location.href = url;
-      }, 2000); // Delay for 2 seconds before redirecting (for the spinner to be visible)
+      window.location.href = url;
+      // setTimeout(() => {
+      //    loadingOverlay.style.display = 'none'; // Optionally hide overlay again
+      // }, 2000); // Delay for 2 seconds before redirecting (for the spinner to be visible)
    }, 500); // Initial delay before showing overlay (0.5 seconds)
 }
