@@ -8,8 +8,15 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/threshold.css') }}"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/loading.css') }}"
+    />
   </head>
   <body>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loader"></div>
+    </div>
 
     <div class="terminal" id="terminal">
       <div class="terminal-line">

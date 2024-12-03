@@ -1,27 +1,3 @@
-body,
-html {
-   margin: 0;
-   padding: 0;
-   height: 100%;
-   /* overflow: hidden !important; */
-   /* Prevent scrolling */
-   cursor: none;
-}
-
-.image-container {
-   position: relative;
-   width: 100%;
-   height: 100vh;
-   overflow: hidden;
-}
-
-#video-feed {
-   position: absolute;
-   width: 100%;
-   height: 100%;
-   object-fit: cover;
-}
-
 .loading-overlay {
    position: fixed;
    top: 20px;

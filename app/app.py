@@ -18,6 +18,7 @@ from processing.combat import scroll_background
 import processing.state as state
 import time
 from processing.image_matching import game_loop
+from processing.menu_gesture_control import detect_gestures_and_stream
 
 app = Flask(__name__)
 app.config['DEBUG'] = True 
@@ -25,33 +26,40 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 
 CORS(app)
 
-# Start Gesture Detection in a Separate Thread
-def start_gesture_detection():
-    menu_gesture_control.detect_gestures(camera)
-
 camera = cv2.VideoCapture(0)
+
+isPlayDemo = False
 
 @app.route('/')
 def menu():
     return render_template('menu.html')
 
-@app.route('/play')
-def play_demo():
-    return "Game Demo Started!"
+@app.route('/menu_video_feed')
+def menu_feed():
+    # global camera
 
-@app.route('/exit')
-def exit_game():
-    # shutdown_server()
-    return "Goodbye!"
- 
-def shutdown_server():
-    if camera.isOpened():
-        camera.release()  # Release the camera resource
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        print("Server shutdown function not available.")
-        os._exit(0)  # Force exit if shutdown function is not available
-    func()
+    # Check if the camera is opened
+    if not camera.isOpened():
+        camera.open(0)
+        if not camera.isOpened():
+            print("Error: Camera not opened or unavailable.")
+            return Response(
+                "Camera not available. Please ensure the camera is connected and not used by another application.",
+                status=503,  # 503 Service Unavailable
+            )
+
+    # Generate and stream frames
+    try:
+        return Response(
+            detect_gestures_and_stream(camera),
+            mimetype='multipart/x-mixed-replace; boundary=frame',
+        )
+    except Exception as e:
+        print(f"Error during frame generation: {e}")
+        return Response(
+            "An error occurred while streaming frames.",
+            status=500,  # Internal Server Error
+        )
 
 ## Image Filter Routes ##
 initialize_base_image("static/assets/images/Image_Filter_Asset.png", blur_strength=51) 
@@ -218,6 +226,10 @@ is_update = False
 current_health = 3
 isDead = False
 
+def play_demo():
+    global isPlayDemo
+    isPlayDemo = True
+
 def player_dead():
     global isDead
     isDead = True
@@ -363,6 +375,20 @@ def sse_mini_game_three():
                 
             time.sleep(1)
                 
+    return Response(event_stream(), content_type='text/event-stream')
+
+@app.route('/sse_menu')
+def sse_menu():
+    def event_stream():
+        global isPlayDemo
+        while True:
+            # Memeriksa apakah game sudah selesai
+            if isPlayDemo:
+                isPlayDemo = False
+                yield f"data: redirect\n\n"
+                break  # Menghentikan stream jika game selesai
+            time.sleep(1)
+
     return Response(event_stream(), content_type='text/event-stream')
 
 ## Image matching routes ##

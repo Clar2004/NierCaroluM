@@ -8,7 +8,6 @@ import math
 import os
 import pygame
 
-
 SHOT_COOLDOWN = 0.3
 last_shot_time = 0
 # socketio_lock = Lock()
@@ -177,7 +176,7 @@ def check_collisions_and_update_health( combined_frame, hit_sound):
             player_health -= 1  # Decrease health
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health <= 0:
+            if player_health <= 1:
                 isDead = True
                 pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
@@ -192,7 +191,7 @@ def check_collisions_and_update_health( combined_frame, hit_sound):
             player_health -= 1  # Decrease health
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health <= 0:
+            if player_health <= 1:
                 pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
                 from app import player_dead
@@ -996,6 +995,7 @@ def scroll_background(camera, isReset):
         boss_state = BOSS_STATE_IDLE_INITIAL
         lasers = []
         red_balls = []
+        boss_health = max_health
         
         isCheat = False
         isCheatTriggered = False
@@ -1027,19 +1027,11 @@ def scroll_background(camera, isReset):
         
         if boss_health <= max_health*0.8 and is_game_one_done == False:
             change_game_one_state()
-            # change_game_three_state()
-            
-            # socketio.emit('game_1', {'message': 'Game 1!'})
-            # socketio.sleep(0.0001)
             print("Redirect to Game 1")
         elif boss_health <= max_health*0.6 and is_game_two_done == False:
-            # socketio.emit('game_2', {'message': 'Game 1!'})
-            # socketio.sleep(0.0001)
             change_game_two_state()
             print("Redirect to Game 2")
         elif boss_health <= max_health*0.4 and is_game_three_done == False:
-            # socketio.emit('game_3', {'message': 'Game 1!'})
-            # socketio.sleep(0.0001)
             change_game_three_state()
             print("Redirect to Game 3")
         

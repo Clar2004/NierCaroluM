@@ -52,7 +52,12 @@ sse.onmessage = function (event) {
 
    if (event.data === "redirect") {
       // sse.close();
-      window.location.href = "/combat";
+      const loadingOverlay = document.getElementById('loading-overlay');
+      loadingOverlay.style.display = 'flex';
+
+      setTimeout(() => {
+         window.location.href = "/combat";
+      }, 2000);
    }
 
    if (event.data === "cheat") {

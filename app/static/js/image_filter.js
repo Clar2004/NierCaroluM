@@ -71,7 +71,12 @@ sse.onmessage = function (event) {
    console.log("Status:", event.data);
    if (event.data === "redirect") {
       sse.close();
-      window.location.href = "/combat";
+      const loadingOverlay = document.getElementById('loading-overlay');
+      loadingOverlay.style.display = 'flex';
+
+      setTimeout(() => {
+         window.location.href = "/combat";
+      }, 2000);
    }
 };
 

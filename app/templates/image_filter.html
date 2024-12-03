@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Filter Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/image_filter.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loading.css') }}" />
 </head>
 <body>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loader"></div>
+   </div>
+
     <!-- Terminal Section -->
     <div class="terminal" id="terminal">
         <div class="terminal-line">
