@@ -1,22 +1,69 @@
-body,
-html {
+/* Image Matching Game CSS */
+body {
    margin: 0;
    padding: 0;
-   height: 100%;
-   overflow: hidden;
-   /* Prevent scrolling */
+   background-color: #4d4d4d;
+   /* Gray background */
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   height: 100vh;
+   font-family: Arial, sans-serif;
 }
 
-.image-container {
+.game-container {
+   text-align: center;
    position: relative;
-   width: 100%;
-   height: 100vh;
-   overflow: hidden;
+   display: flex;
+}
+
+.video-container {
+   position: relative;
+   margin-bottom: 20px;
+   right: 6rem;
 }
 
 .video-feed {
-   position: absolute;
    width: 100%;
-   height: 100%;
+   max-width: 1000px;
+   height: auto;
+   border-radius: 8px;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.info-container {
+   margin-top: 20px;
+}
+
+.message {
+   font-size: 24px;
+   color: #ffffff;
+   font-weight: bold;
+   margin: 10px 0;
+}
+
+.random-image {
+   width: 300px;
+   height: 300px;
    object-fit: cover;
+   border-radius: 8px;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.right_part{
+   display: flex;
+   flex-direction: column;
+}
+
+#cheat-text {
+   position: fixed;
+   bottom: 20px;
+   right: 20px;
+   background-color: rgba(0, 0, 0, 0.7);
+   color: white;
+   padding: 10px;
+   border-radius: 5px;
+   display: none;
+   font-size: 18px;
+   z-index: 1000;
 }

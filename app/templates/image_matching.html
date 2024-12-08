@@ -1,15 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Image Matching Game</title>
-   <link rel="stylesheet" href="{{ url_for('static', filename='css/image_matching.css') }}">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/image_matching.css') }}"
+    />
+   <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/loading.css') }}"
+    />
+  </head>
+  <body>
+   <div class="loading-overlay" id="loading-overlay">
+      <div class="loader"></div>
+   </div>
 
-   <img id="video-feed" src="{{ url_for('match_video_feed') }}" alt="Video Feed">
-   <script src="{{ url_for('static', filename='js/image_matching.js') }}"></script>
-</body>
+    <div class="game-container">
+      <div class="video-container">
+        <img
+          id="video-feed"
+          class="video-feed"
+          src="{{ url_for('matches_video_feed') }}"
+          alt="Video Feed"
+        />
+      </div>
+
+      <div class="right-part">
+      <!-- Random Image -->
+        <div class="random-image-container">
+          <img
+            id="random-image"
+            class="random-image"
+            src=""
+            alt="Random Image"
+          />
+        </div>
+
+      <!-- Countdown and Accuracy message -->
+        <div class="info-container">
+          <div id="countdown-message" class="message">3</div>
+          <div id="accuracy-text" class="message">Accuracy: 0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cheat-text"></div>
+
+    <script src="{{ url_for('static', filename='js/image_matching.js') }}"></script>
+  </body>
 </html>
-  

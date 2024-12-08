@@ -1,15 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Combat Animation</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/combat.css') }}">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Combat Animation</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/combat.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/glitch.css') }}"
+    />
+  </head>
+  <body>
+    <div id="video-overlay">
+      <video id="transition-video" muted>
+        <source
+          src="{{ url_for('static', filename='assets/video/GlitchTransition.mp4') }}"
+          type="video/mp4"
+        />
+        Your browser does not support the video tag.
+      </video>
 
-  <script src="{{ url_for('static', filename='js/combat.js') }}"></script>
-  <img class="video-feed" src="{{url_for('combat_feed')}}" alt="Menu Feed">
+      <audio id="transition-sound" preload="auto">
+        <source
+          src="{{ url_for('static', filename='assets/video/glitch_sound.mp3') }}"
+          type="audio/mp3"
+        />
+        Your browser does not support the audio tag.
+      </audio>
+    </div>
 
-</body>
+    <div id="video-overlay2">
+      <video id="transition-video2" muted>
+        <source
+          src="{{ url_for('static', filename='assets/video/afterDead.mp4') }}"
+          type="video/mp4"
+        />
+        Your browser does not support the video tag.
+      </video>
+      <audio id="transition-sound2" preload="auto">
+        <source
+          src="{{ url_for('static', filename='assets/video/glitch_sound.mp3') }}"
+          type="audio/mp3"
+        />
+        Your browser does not support the audio tag.
+      </audio>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/combat.js') }}"></script>
+    <img class="video-feed" src="{{url_for('combat_feed')}}" alt="Menu Feed" />
+  </body>
 </html>

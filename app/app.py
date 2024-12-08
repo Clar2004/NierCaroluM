@@ -26,7 +26,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 
 CORS(app)
 
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(1)
 
 isPlayDemo = False
 
@@ -36,8 +36,7 @@ def menu():
 
 @app.route('/menu_video_feed')
 def menu_feed():
-    # global camera
-
+    
     # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
@@ -167,17 +166,31 @@ def edge_corner_feed():
 isReset = False
 @app.route('/combat')
 def combat_page():
-    global isReset
+    global isReset, is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done
+    global is_game_three_done, is_mini_game_three_done, is_game_four_done, is_mini_game_four_done
+    global is_cheat, is_update
+    
     reset_game = request.args.get('reset', 'false') == 'true'
     
     if reset_game:
         isReset = True
+        is_game_one_done = False
+        is_mini_game_one_done = False
+        is_game_two_done = False
+        is_mini_game_two_done = False
+        is_game_three_done = False
+        is_mini_game_three_done = False
+        is_game_four_done = False
+        is_mini_game_four_done = False
         
     return render_template('combat.html')
 
 @app.route('/combat_feed')
 def combat_feed():
     global isReset
+    
+    print("Current reset state:", isReset)
+    
     # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
@@ -214,13 +227,15 @@ def combat_feed():
                 "An error occurred while streaming frames.",
                 status=500,  # Internal Server Error
             )
-
+            
 is_game_one_done = False
 is_mini_game_one_done = False
 is_game_two_done = False
 is_mini_game_two_done = False
 is_game_three_done = False
 is_mini_game_three_done = False
+is_game_four_done = False
+is_mini_game_four_done = False
 is_cheat = False
 is_update = False
 current_health = 3
@@ -259,6 +274,11 @@ def change_game_three_state():
     global is_game_three_done
     is_game_three_done = True  
     print("Game three is done!") 
+
+def change_game_four_state():
+    global is_game_four_done
+    is_game_four_done = True  
+    print("Game four is done!")
     
 @app.route('/game_one', methods=['POST'])
 def change_mini_game_one_state():
@@ -294,6 +314,23 @@ def change_mini_game_two_state():
     else :
         return jsonify({"message": "No message provided"}), 400
     
+@app.route('/game_four', methods=['POST'])
+def change_mini_game_four_state():
+    data = request.get_json() 
+    if data :
+        
+        message = data.get('message', 'No message provided')
+        print(message)
+        if message != "Sucess":
+            return jsonify({"message": "Invalid message"}), 400
+        global is_mini_game_four_done
+        is_mini_game_four_done = True
+            
+        print("Mini game one is done!")
+        return jsonify({"message": "Mini game two is done!"}),200
+    else :
+        return jsonify({"message": "No message provided"}), 400
+    
 def change_mini_game_three_state():
     global is_mini_game_three_done
     is_mini_game_three_done = True
@@ -302,7 +339,7 @@ def change_mini_game_three_state():
 @app.route('/sse_game_status')
 def sse_game_status():
     def event_stream():
-        global is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done, isDead
+        global is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done, isDead, isReset
         while True:
             # Memeriksa apakah game sudah selesai
             if is_game_one_done and not is_mini_game_one_done:
@@ -313,6 +350,9 @@ def sse_game_status():
                 break
             elif is_game_three_done and not is_mini_game_three_done:
                 yield f"data: game_three\n\n"
+                break
+            elif is_game_four_done and not is_mini_game_four_done:
+                yield f"data: game_four\n\n"
                 break
             elif isDead:
                 isDead = False
@@ -386,18 +426,50 @@ def sse_menu():
             if isPlayDemo:
                 isPlayDemo = False
                 yield f"data: redirect\n\n"
-                break  # Menghentikan stream jika game selesai
             time.sleep(1)
 
     return Response(event_stream(), content_type='text/event-stream')
 
 ## Image matching routes ##
+isGameStart = False
+isCountDownStart = False
+isDrawingStart = False
+isCountDownEnd = False
+isTriggered = False
+targetImageIndex = None
+isSendAccuracy = False
+match_accuracy = None
+
+def match_start():
+    global isGameStart
+    isGameStart = True
+
+def count_down_start():
+    global isCountDownStart
+    isCountDownStart = True
+
+def drawing_start():
+    global isDrawingStart
+    isDrawingStart = True
+
+def count_down_end():
+    global isCountDownEnd
+    isCountDownEnd = True
+    
+def send_accuracy():
+    global isSendAccuracy
+    isSendAccuracy = True
+    
+def set_match_accuracy(accuracy):
+    global match_accuracy
+    match_accuracy = accuracy
+
 @app.route('/image_match')
 def image_match_page():
     return render_template('image_matching.html')
 
 @app.route('/match_video_feed')
-def match_video_feed():
+def matches_video_feed():
 
     # Check if the camera is opened
     if not camera.isOpened():
@@ -421,6 +493,66 @@ def match_video_feed():
             "An error occurred while streaming frames.",
             status=500,  # Internal Server Error
         )
+        
+@app.route('/sse_mini_game_four')
+def sse_mini_game_four():
+    def event_stream():
+        global is_game_four_done, is_mini_game_four_done
+        global isGameStart, isCountDownStart, isDrawingStart, isCountDownEnd, isTriggered
+        global isSendAccuracy, targetImageIndex, match_accuracy
+        
+        while True:
+            # Memeriksa apakah game sudah selesai
+            if is_game_four_done and is_mini_game_four_done:
+                yield f"data: redirect\n\n"
+                break
+            
+            elif isGameStart:
+                isGameStart = False
+                yield f"data: game_start\n\n"
+            elif isCountDownStart and not isTriggered:
+                isCountDownStart = False
+                isTriggered = True
+                yield f"data: countdown_start\n\n"
+            elif isDrawingStart:
+                isDrawingStart = False
+                yield f"data: drawing_start\n\n"
+            elif isCountDownEnd:
+                isCountDownEnd = False
+                isTriggered = False
+                yield f"data: countdown_end\n\n"
+            
+            time.sleep(0.001)
+            
+    return Response(event_stream(), content_type='text/event-stream')
+
+@app.route('/sse_mini_game_four_accuracy')
+def sse_mini_game_four_accuracy():
+    def event_stream():
+        global isSendAccuracy, targetImageIndex, match_accuracy
+        
+        while True:
+            if isSendAccuracy:
+                isSendAccuracy = False
+                targetImageIndex = None
+                yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {match_accuracy}}}\n\n"
+            
+            time.sleep(0.01)
+            
+    return Response(event_stream(), content_type='text/event-stream')
+
+@app.route('/set_image_index', methods=['POST'])
+def set_image_index():
+    global targetImageIndex
+    data = request.get_json()  # Get the incoming JSON data
+    image_index = data.get('imageIndex')  # Extract the image index
+    targetImageIndex = image_index
+
+    # Do something with the image index (e.g., store it or process it)
+    print(f"Received image index: {image_index}")
+
+    # Respond back to the client
+    return jsonify({"status": "success", "imageIndex": image_index})
 
 if __name__ == '__main__':
     app.run()

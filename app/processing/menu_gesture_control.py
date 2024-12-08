@@ -3,6 +3,7 @@ import mediapipe as mp
 from flask import Flask, Response, render_template
 import os
 import pygame
+import time
 
 # Initialize Flask
 app = Flask(__name__)
@@ -29,6 +30,8 @@ cap_background = cv2.VideoCapture(background_video_path)
 
 screen_width = 2860
 screen_height = 1080
+
+last_click_time = time.time()
 
 # Gesture detection functions
 def is_pinch(landmarks):
@@ -82,7 +85,7 @@ def resize_and_crop_background(frame_bg, screen_width, screen_height):
     return frame_bg_cropped
 
 def detect_gestures_and_stream(cap_camera):
-    global screen_height, screen_width
+    global screen_height, screen_width, last_click_time  
 
     last_emitted = {'x': None, 'y': None, 'gesture': None}
     pygame.mixer.init()
@@ -175,10 +178,21 @@ def detect_gestures_and_stream(cap_camera):
                         (text_x - extra_width // 2, text_y + 10),  # Start position (shifted left)
                         (text_x + text_size[0] + extra_width // 2, text_y + 10),  # End position (shifted right)
                         (255, 255, 255), 2)  # Draw the white line with thickness of 2
+            # if is_cursor_hovering(cursor_x, cursor_y, text_x, text_y, text_size[0], text_size[1]) and last_emitted['gesture'] == 'click':
+            #     print("Play Demo clicked!")
+            #     from app import play_demo
+            #     play_demo()
+            
+            # Check if 5 seconds have passed since the last click
+            current_time = time.time()
             if is_cursor_hovering(cursor_x, cursor_y, text_x, text_y, text_size[0], text_size[1]) and last_emitted['gesture'] == 'click':
-                print("Play Demo clicked!")
-                from app import play_demo
-                play_demo()
+                if current_time - last_click_time >= 3:  # If 5 seconds have passed
+                    print("Play Demo clicked!")
+                    from app import play_demo
+                    play_demo()
+                    last_click_time = current_time  # Update the last click time
+                else:
+                    print("Cooldown active. Please wait...")
 
         # Draw the cursor at the detected position
         if cursor_x is not None and cursor_y is not None:

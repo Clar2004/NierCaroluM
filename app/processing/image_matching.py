@@ -1,55 +1,35 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import random
 import time
-from threading import Lock
+import pygame
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
-# Load images for the user to draw
 images = [
-    "assets/.jpg", 
-    "image2.jpg", 
-    "image3.jpg"
-    ]  # Use your image file paths here
+    "static/assets/image_matching/house.jpg", 
+    "static/assets/image_matching/star.jpg", 
+    "static/assets/image_matching/sword.png"
+]  # Use your image file paths here
 
-# Initialize drawing state
-drawing_started = False
-drawn_image = np.zeros((500, 500, 3), dtype=np.uint8)  # Canvas for drawing
+prev_position = None  # Store previous position for line drawing
+smoothed_position = None  # For applying smoothing
+drawing = False  # Track whether drawing is enabled
+drawing_start_time = None  # Track when drawing started
+countdown_time = 3  # Countdown duration in seconds
+last_thumbs_up_time = None  # Time when thumbs up was last detected
+game_started = False  # Track whether the game has started
+waiting_for_thumbs_up = True  # Track if we are waiting for thumbs up gesture
+countdown_started = False
 
-# Gesture state tracking
-last_position = None
-is_drawing = False
+trigger_start_countdown = False 
+trigger_end_countdown = False
 
-# Initialize the video capture
-screen_width, screen_height = 640, 480  # Default resolution for webcam
-lock = Lock()
+alpha = 0.2  # Smoothing factor
 
-# Function to check for fist gesture
-def is_fist(hand_landmarks):
-    """Detect if the hand is a fist based on finger positions"""
-    thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP].y
-    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y
-    return index_tip > thumb_tip  # Fist check, adjust as per needs
-
-# Function to check if the index finger is being used for drawing
-def is_index_finger_up(hand_landmarks):
-    """Detect if the index finger is up based on its position"""
-    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-    index_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
-    return index_tip.y < index_mcp.y  # Index finger up check
-
-# Drawing function
-def draw_on_board(frame, cursor_x, cursor_y):
-    """Draw on the canvas (drawing_board)"""
-    if drawing_started:
-        cv2.circle(drawn_image, (cursor_x, cursor_y), 5, (255, 0, 0), -1)
-
-# Image Matching using ORB (Oriented FAST and Rotated BRIEF)
 def image_matching(drawn_image, target_image):
     """Match the drawn image with the target image using ORB"""
     orb = cv2.ORB_create()
@@ -65,91 +45,172 @@ def image_matching(drawn_image, target_image):
     similarity_percentage = len(matches) / len(kp1) * 100 if len(kp1) > 0 else 0
     return similarity_percentage
 
-# Countdown timer
-def countdown_timer():
-    """Start the countdown for 30 seconds"""
-    global drawing_started
-    for i in range(3, 0, -1):
-        print(f"Game starting in {i}...")
-        time.sleep(1)
-    drawing_started = True
-    print("Start drawing!")
+# Function to detect thumbs up gesture
+def is_thumbs_up(hand_landmarks):
+    thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    thumb_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP]
+    
+    # Check if thumb is up (thumb tip above the thumb MCP and index finger is down)
+    thumbs_up = thumb_tip.y < thumb_mcp.y and index_tip.y > thumb_tip.y
+    return thumbs_up
 
-# Main Game Loop
-def game_loop(camera):
-    with lock:
-        global drawing_started, drawn_image, last_position, is_drawing
+def draw_text(frame, text, position=(50, 50), font_scale=1, color=(0, 255, 0), thickness=2):
+    cv2.putText(frame, text, position, cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
 
-        # Select a random image from the list
-        target_image = cv2.imread(random.choice(images), cv2.IMREAD_GRAYSCALE)
-        target_image = cv2.resize(target_image, (500, 500))  # Resize for consistency
+# Function to detect pinch gesture
+def is_pinch(hand_landmarks):
+    thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    distance = np.sqrt((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2)
+    return distance < 0.05  # If thumb and index finger are close, return True for pinch
 
-        # Initialize timer and drawing state
-        start_time = time.time()
-        drawing_started = False
+def draw_on_canvas(cursor_x, cursor_y, canvas, prev_position, smoothed_position, alpha=0.2):
+    """Draw on the canvas with smoothing"""
+    if prev_position is not None:
+        smoothed_position = (
+            int(alpha * cursor_x + (1 - alpha) * prev_position[0]),
+            int(alpha * cursor_y + (1 - alpha) * prev_position[1]),
+        )
+        # Draw the line between previous and smoothed position
+        if 0 <= smoothed_position[0] < canvas.shape[1] and 0 <= smoothed_position[1] < canvas.shape[0]:
+            cv2.line(canvas, prev_position, smoothed_position, (0, 0, 0), 5)  # Black line
+        prev_position = smoothed_position  # Update previous position
+    else:
+        prev_position = (cursor_x, cursor_y)  # Set initial position
 
-        # Start countdown
-        countdown_timer()
+    return prev_position, smoothed_position
 
-        while True:
-            ret, frame = camera.read()
-            if not ret:
-                print("Failed to capture image")
-                break
+def game_loop(cap):
+    global prev_position, smoothed_position, drawing, drawing_start_time, countdown_time, last_thumbs_up_time, game_started, waiting_for_thumbs_up
+    global trigger_end_countdown, trigger_start_countdown
 
-            # Flip and convert to RGB for MediaPipe
-            frame = cv2.flip(frame, 1)
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = hands.process(rgb_frame)
+    alpha = 0.2  # Smoothing factor
+    isInitialized = False
+    canvas = None
+    
+    # Initialize the mixer for pygame
+    pygame.mixer.init()
 
-            # Display countdown and drawing instructions
-            elapsed_time = time.time() - start_time
-            time_remaining = max(0, 30 - int(elapsed_time))
+    # Load the music file
+    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.play(loops=-1, start=0.0)
+
+    while True:
+        # Read frame from webcam
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Flip the frame horizontally
+        frame = cv2.flip(frame, 1)
+
+        if not isInitialized and canvas is None:
+            isInitialized = True
+            canvas = np.ones((frame.shape[0], frame.shape[1], 3), dtype=np.uint8) * 255  # White background
+
+        # Convert to RGB (MediaPipe requires RGB format)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Process the frame for hand landmarks
+        results = hands.process(rgb_frame)
+
+        # If hands are detected
+        if results.multi_hand_landmarks:
+            for landmarks in results.multi_hand_landmarks:
+                # Track the right-hand index finger
+                index_tip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                x, y = int(index_tip.x * frame.shape[1]), int(index_tip.y * frame.shape[0])
+
+                # Check for pinch gesture
+                if is_pinch(landmarks) and game_started:
+                    if drawing:
+                        print("Pinch detected! Stop drawing for now.")
+                        drawing = False  # Stop drawing immediately, but don't reset the game
+                        prev_position = None  # Reset previous position
+                        smoothed_position = None  # Reset smoothed position
+                elif not is_pinch(landmarks) and game_started:
+                    drawing = True
+                    
+                if drawing and game_started:
+                    prev_position, smoothed_position = draw_on_canvas(x, y, canvas, prev_position, smoothed_position, alpha)
+
+                # Check if thumbs up gesture is detected
+                if is_thumbs_up(landmarks):
+
+                    if not game_started and waiting_for_thumbs_up:
+                        # from app import match_start
+                        # match_start()
+                        
+                        # Start the countdown for 3 seconds after thumbs-up detected
+                        trigger_start_countdown = True
+                        last_thumbs_up_time = time.time()  # Start the drawing timer
+                        waiting_for_thumbs_up = False  # No longer waiting for thumbs-up
+                        # print("Thumbs up detected! Starting countdown...")
+                        canvas = np.ones((480, 640, 3), dtype=np.uint8) * 255  # Reset canvas
+                        
+                        from app import count_down_start
+                        count_down_start()
+                        
+        # Handle countdown logic (decrease countdown time as seconds pass)
+        if trigger_start_countdown and last_thumbs_up_time is not None:
             
-            if drawing_started:
-                cv2.putText(frame, "Start drawing!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-            elif time_remaining > 0:
-                cv2.putText(frame, f"Game starting in {time_remaining}...", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-            else:
-                cv2.putText(frame, "Time's up! Press 'q' to exit.", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            # print("Starting game countdown")
+            
+            # Time elapsed since thumbs up was detected
+            time_elapsed = time.time() - last_thumbs_up_time
 
-            if results.multi_hand_landmarks:
-                for hand_landmarks in results.multi_hand_landmarks:
-                    index_finger = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                    cursor_x = int(index_finger.x * screen_width)
-                    cursor_y = int(index_finger.y * screen_height)
+            if time_elapsed > 4:
+                game_started = True  # Enable drawing after countdown
+                drawing = True  # Start drawing
+                trigger_start_countdown = False  # Stop countdown trigger
+                last_thumbs_up_time = None
+                drawing_start_time = time.time()  # Initialize the drawing timer at game start
+                from app import drawing_start
+                drawing_start()
 
-                    # If fist is detected, stop drawing
-                    if is_fist(hand_landmarks):
-                        drawing_started = False
+        # Handle drawing timer and 30-second rule
+        if game_started and drawing_start_time is not None:
+            
+            # print("drawing...")
+            
+            time_elapsed = time.time() - drawing_start_time
+            if time_elapsed > 5:  # Disable drawing after 10 seconds for testing
+                game_started = False
+                drawing_start_time = None  # Reset drawing timer
+                drawing = False
+                trigger_end_countdown = True
+                last_thumbs_up_time = time.time()  # Start the countdown for game reset
+                # print("Drawing time ended! Waiting for 3 seconds before resetting...")
+                
+                from app import count_down_end
+                count_down_end()
 
-                    # If index finger is up and drawing is enabled, start drawing
-                    elif is_index_finger_up(hand_landmarks) and drawing_started:
-                        draw_on_board(frame, cursor_x, cursor_y)
+        # Reset game after 3 seconds of idle time (if drawing is done)
+        if trigger_end_countdown and last_thumbs_up_time is not None:
+            # print("starting end cooldown")
+            
+            time_elapsed = time.time() - last_thumbs_up_time
+            if time_elapsed > 3:
+                waiting_for_thumbs_up = True
+                trigger_end_countdown = False
+                last_thumbs_up_time = None
+                # print("Game reset! Waiting for thumbs up...")
+                
+                from app import targetImageIndex, send_accuracy, set_match_accuracy
+                target_image = cv2.imread(images[targetImageIndex])
+                similarity_percentage = image_matching(canvas, target_image)
+                set_match_accuracy(similarity_percentage)
+                print(f"Accuracy: {similarity_percentage}")
+                send_accuracy()
 
-            # Display the canvas and webcam feed together
-            combined_frame = np.hstack((frame, cv2.cvtColor(drawn_image, cv2.COLOR_BGR2RGB)))
-            cv2.imshow("Drawing Board - Press 'q' to quit", combined_frame)
+        # Blend the frame with the canvas and draw text
+        canvas_resized = cv2.resize(canvas, (frame.shape[1], frame.shape[0]))
+        frame_with_canvas = cv2.addWeighted(frame, 0, canvas_resized, 1, 0)
 
-            # Check if 30 seconds have passed
-            if elapsed_time >= 30:
-                drawing_started = False
-                print("Time's up!")
-                break
+        # Encode the frame to JPEG
+        _, jpeg_frame = cv2.imencode('.jpg', frame_with_canvas)
 
-        # After 30 seconds, perform image matching
-        similarity = image_matching(drawn_image, target_image)
-        print(f"Image similarity: {similarity:.2f}%")
-
-        if similarity > 70:
-            print("You did a great job!")
-        else:
-            print("Try again! The game will restart with a new image.")
-            game_loop(camera)  # Restart the game
-
-        # Preparing frame for streaming (if necessary)
-        ret, buffer = cv2.imencode('.jpg', drawn_image)  # Use drawn_image for final output
-        frame = buffer.tobytes()
-
+        # Yield the frame to the client
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame.tobytes() + b'\r\n')

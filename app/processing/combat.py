@@ -53,6 +53,7 @@ mp_draw = mp.solutions.drawing_utils
 isDead = False
 isCheat = False
 isCheatTriggered = False
+isBossDead = False
 
 ##boss section ##
 
@@ -133,6 +134,8 @@ show_text_start_time = None
 isGameTwoDone = False
 isGameThreeDone = False
 
+isPaused = False
+isPausedActive = False
 
 def load_animation_images():
     global animation_images
@@ -176,10 +179,14 @@ def check_collisions_and_update_health( combined_frame, hit_sound):
             player_health -= 1  # Decrease health
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health <= 1:
+            if player_health < 1:
                 isDead = True
                 pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
+                
+                pygame.time.delay(1000)
+                hit_sound.stop()
+                
                 from app import player_dead
                 player_dead()
             break  # Break to prevent multiple health reductions for one collision
@@ -191,9 +198,13 @@ def check_collisions_and_update_health( combined_frame, hit_sound):
             player_health -= 1  # Decrease health
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health <= 1:
+            if player_health < 1:
                 pygame.mixer.music.stop()
                 run_death_animation(animation_images, player_x, player_y, combined_frame)
+                
+                pygame.time.delay(1000)
+                hit_sound.stop()
+                
                 from app import player_dead
                 player_dead()
 
@@ -201,14 +212,17 @@ def check_collisions_and_update_health( combined_frame, hit_sound):
     
     if is_collision_with_boss() and not isCheat:
         # If player collides with the boss, directly set health to 0
-        player_health = 0
-        isDead = True
-        hit_sound.set_volume(0.6)
-        hit_sound.play()
-        pygame.mixer.music.stop()
-        run_death_animation(animation_images, player_x, player_y, combined_frame)
-        from app import player_dead
-        player_dead()
+        player_health = player_health - 5
+        
+        if player_health < 1:
+            isDead = True
+            pygame.mixer.music.stop()
+            run_death_animation(animation_images, player_x, player_y, combined_frame)
+            
+            hit_sound.stop()
+    
+            from app import player_dead
+            player_dead()
     
     return combined_frame, isDead
 
@@ -390,6 +404,17 @@ def detect_hand_gesture(frame):
                     middle_finger_tip.y < pinky_finger_tip.y and   # Middle finger is above pinky finger
                     abs(index_finger_tip.x - middle_finger_tip.x) > 0.1):  # Fingers should be apart (distance threshold)
                     right_hand_gesture = "cheat" #(peace sign)
+                    
+                elif (abs(thumb_tip.x - index_finger_tip.x) > 0.1 and
+                    abs(index_finger_tip.x - middle_finger_tip.x) > 0.1 and
+                    abs(middle_finger_tip.x - ring_finger_tip.x) > 0.1 and
+                    abs(ring_finger_tip.x - pinky_finger_tip.x) > 0.1 and
+                    abs(thumb_tip.y - wrist.y) > 0.2 and
+                    abs(index_finger_tip.y - wrist.y) > 0.2 and
+                    abs(middle_finger_tip.y - wrist.y) > 0.2 and
+                    abs(ring_finger_tip.y - wrist.y) > 0.2 and
+                    abs(pinky_finger_tip.y - wrist.y) > 0.2):
+                    right_hand_gesture = "open"  # Detect open hand gesture
 
     return right_hand_position, left_hand_gesture, right_hand_gesture
 
@@ -421,29 +446,30 @@ boss_height, boss_width, _ = boss_image.shape
 
 # Modify the move_boss function to stop when the boss reaches the middle of the screen
 def move_boss(isAlreadyCenter):
-    global boss_x, boss_state, boss_rotation_angle, state_change_time
+    global boss_x, boss_y, boss_state, boss_rotation_angle, state_change_time, isBossDead, isPaused, isPausedActive
     
-    # Handle different boss states
-    if boss_state == BOSS_STATE_IDLE:
-        pass
-    
-    elif boss_state == BOSS_STATE_SHOOTING:
-        # In shooting state, rotate clockwise and move rightwards
-        boss_rotation_angle += 1  # Increase the angle for clockwise rotation
-        if boss_rotation_angle >= 360:  # Reset to 0 degrees after full rotation
-            boss_rotation_angle = 0
+    if not isBossDead:
+        # Handle different boss states
+        if boss_state == BOSS_STATE_IDLE:
+            pass
         
-    elif boss_state == BOSS_STATE_SHOOTING_LASERS:
-       # In shooting lasers state, rotate anticlockwise and move leftwards
-        boss_rotation_angle -= 1  # Decrease the angle for anticlockwise rotation
-        if boss_rotation_angle < 0:  # Ensure the angle stays between 0-360 degrees
-            boss_rotation_angle = 359
-    
-    elif boss_state == BOSS_STATE_IDLE_INITIAL:
-        # In shooting state, rotate clockwise and move rightwards
-        boss_rotation_angle += 1  # Increase the angle for clockwise rotation
-        if boss_rotation_angle >= 360:  # Reset to 0 degrees after full rotation
-            boss_rotation_angle = 0
+        elif boss_state == BOSS_STATE_SHOOTING:
+            # In shooting state, rotate clockwise and move rightwards
+            boss_rotation_angle += 1  # Increase the angle for clockwise rotation
+            if boss_rotation_angle >= 360:  # Reset to 0 degrees after full rotation
+                boss_rotation_angle = 0
+            
+        elif boss_state == BOSS_STATE_SHOOTING_LASERS:
+        # In shooting lasers state, rotate anticlockwise and move leftwards
+            boss_rotation_angle -= 1  # Decrease the angle for anticlockwise rotation
+            if boss_rotation_angle < 0:  # Ensure the angle stays between 0-360 degrees
+                boss_rotation_angle = 359
+        
+        elif boss_state == BOSS_STATE_IDLE_INITIAL:
+            # In shooting state, rotate clockwise and move rightwards
+            boss_rotation_angle += 1  # Increase the angle for clockwise rotation
+            if boss_rotation_angle >= 360:  # Reset to 0 degrees after full rotation
+                boss_rotation_angle = 0
     
     # Rotate the boss image with the updated angle
     rotated_boss_image = rotate_boss_image(boss_image, boss_rotation_angle)
@@ -454,6 +480,15 @@ def move_boss(isAlreadyCenter):
     # Move boss leftwards until it reaches the center of the screen
     if boss_x > screen_center_x:
         boss_x -= boss_speed  # Move boss leftwards
+        
+    if isBossDead and not isPaused:
+        if boss_y + boss_height < video_height:
+            boss_y += 5  # Move the boss down
+        else:
+            boss_y = video_height - boss_height
+            pygame.mixer.music.stop()
+            from app import player_dead
+            player_dead()
     
     # Optionally, change state or behavior after reaching the middle
     if not isAlreadyCenter:
@@ -580,15 +615,15 @@ def reduce_boss_health(amount, hit_sound):
     Reduces the boss's health when a shot hits.
     Ensures health does not drop below 0.
     """
-    global boss_health
+    global boss_health, isBossDead
     
     hit_sound.set_volume(0.6)
     hit_sound.play()
     boss_health = max(0, boss_health - amount)
     if (boss_health <= 0) :
-        from app import player_dead
-        player_dead()
-        print("Boss defeated! message sent")
+        hit_sound.set_volume(0.6)
+        hit_sound.play()
+        isBossDead = True
     
 def draw_health_bar(frame, health, max_health, health_bar_y, health_bar_width, health_bar_height):
     """
@@ -796,142 +831,148 @@ def draw_lasers(frame):
                         red_ball_rgb[:valid_y_end - valid_y_start, :valid_x_end - valid_x_start, c]
 
 def update_boss_state(boss_state, state_change_time, current_time, combined_frame, boss_change_sound):
-    global boss_image, boss_image_index, laser_image, lasers, boss_rotation_angle
+    global boss_image, boss_image_index, laser_image, lasers, boss_rotation_angle, isBossDead
 
-    # Handle shooting state
-    if boss_state == BOSS_STATE_SHOOTING:
-        if current_time - state_change_time >= shooting_time:
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            # Transition to idle state after shooting time is over
-            boss_state = BOSS_STATE_IDLE
-            state_change_time = current_time
-            print("State changed to idle")
-        else:
-            # Keep shooting red balls during the shooting state
-            shoot_red_ball(boss_x, boss_y, boss_rotation_angle)
-            move_red_balls()
-            draw_red_balls(combined_frame)
+    if not isBossDead:
+        # Handle shooting state
+        if boss_state == BOSS_STATE_SHOOTING:
+            if current_time - state_change_time >= shooting_time:
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                # Transition to idle state after shooting time is over
+                boss_state = BOSS_STATE_IDLE
+                state_change_time = current_time
+                print("State changed to idle")
+            else:
+                # Keep shooting red balls during the shooting state
+                shoot_red_ball(boss_x, boss_y, boss_rotation_angle)
+                move_red_balls()
+                draw_red_balls(combined_frame)
 
-    # Handle idle state
-    elif boss_state == BOSS_STATE_IDLE:
-        if current_time - state_change_time >= idle_time:
-            boss_state = BOSS_STATE_IMAGE_CHANGE1
-            state_change_time = current_time  # Reset the timer for image change state
-            print("State changed to image change to index 2")
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            # Let the red balls that already deployed continue to move
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-    
-    # Handle image change state
-    elif boss_state == BOSS_STATE_IMAGE_CHANGE1:
-        if current_time - state_change_time >= image_change_duration:
-            boss_state = BOSS_STATE_IMAGE_CHANGE2
-            state_change_time = current_time  # Reset the timer for image change
-            print("State changed to image change to index 3")
-            
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-            boss_change_sound.set_volume(0.5)
-            boss_change_sound.play()
-            
-    elif boss_state == BOSS_STATE_IMAGE_CHANGE2:
-        if current_time - state_change_time >= image_change_duration:
-            state_change_time = current_time  # Reset the timer for image change
-            boss_state = BOSS_STATE_SHOOTING_LASERS
-            print("State changed to shooting lasers")
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            boss_image = cv2.imread('static/assets/boss_asset/bos_3.png', cv2.IMREAD_UNCHANGED)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-            
-    elif boss_state == BOSS_STATE_SHOOTING_LASERS:
-        if current_time - state_change_time >= shooting_time:
-            # Transition to idle state after shooting time is over
-            boss_state = BOSS_STATE_IDLE2
-            state_change_time = current_time
-            print("State changed to idle")
-            move_lasers()
-            draw_lasers(combined_frame)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-        else:
-            # Keep shooting laser during the state
-            shoot_lasers(boss_x, boss_y, boss_rotation_angle)
-            move_lasers()
-            draw_lasers(combined_frame)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-    
-    elif boss_state == BOSS_STATE_IDLE2:
-        if current_time - state_change_time >= idle_time:
-            boss_state = BOSS_STATE_IMAGE_CHANGEBACK2
-            state_change_time = current_time  # Reset the timer for image change state
-            print("State changed to image change to index 2")
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            # Let the red balls that already deployed continue to move
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-    
-    elif boss_state == BOSS_STATE_IMAGE_CHANGEBACK2:
-        if current_time - state_change_time >= image_change_duration:
-            boss_state = BOSS_STATE_IMAGE_CHANGEBACK1
-            state_change_time = current_time  # Reset the timer for image change
-            print("State changed to image change to index 3")
-            
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-            
-    elif boss_state == BOSS_STATE_IMAGE_CHANGEBACK1:
-        if current_time - state_change_time >= image_change_duration:
-            state_change_time = current_time  # Reset the timer for image change
-            boss_state = BOSS_STATE_SHOOTING
-            print("State changed to shooting lasers")
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
-        else:
-            boss_image = cv2.imread('static/assets/boss_asset/bos_1.png', cv2.IMREAD_UNCHANGED)
-            move_red_balls()
-            draw_red_balls(combined_frame)
-            move_lasers()
-            draw_lasers(combined_frame)
+        # Handle idle state
+        elif boss_state == BOSS_STATE_IDLE:
+            if current_time - state_change_time >= idle_time:
+                boss_state = BOSS_STATE_IMAGE_CHANGE1
+                state_change_time = current_time  # Reset the timer for image change state
+                print("State changed to image change to index 2")
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                # Let the red balls that already deployed continue to move
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+        
+        # Handle image change state
+        elif boss_state == BOSS_STATE_IMAGE_CHANGE1:
+            if current_time - state_change_time >= image_change_duration:
+                boss_state = BOSS_STATE_IMAGE_CHANGE2
+                state_change_time = current_time  # Reset the timer for image change
+                print("State changed to image change to index 3")
+                
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+                boss_change_sound.set_volume(0.5)
+                boss_change_sound.play()
+                
+        elif boss_state == BOSS_STATE_IMAGE_CHANGE2:
+            if current_time - state_change_time >= image_change_duration:
+                state_change_time = current_time  # Reset the timer for image change
+                boss_state = BOSS_STATE_SHOOTING_LASERS
+                print("State changed to shooting lasers")
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                boss_image = cv2.imread('static/assets/boss_asset/bos_3.png', cv2.IMREAD_UNCHANGED)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+                
+        elif boss_state == BOSS_STATE_SHOOTING_LASERS:
+            if current_time - state_change_time >= shooting_time:
+                # Transition to idle state after shooting time is over
+                boss_state = BOSS_STATE_IDLE2
+                state_change_time = current_time
+                print("State changed to idle")
+                move_lasers()
+                draw_lasers(combined_frame)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+            else:
+                # Keep shooting laser during the state
+                shoot_lasers(boss_x, boss_y, boss_rotation_angle)
+                move_lasers()
+                draw_lasers(combined_frame)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+        
+        elif boss_state == BOSS_STATE_IDLE2:
+            if current_time - state_change_time >= idle_time:
+                boss_state = BOSS_STATE_IMAGE_CHANGEBACK2
+                state_change_time = current_time  # Reset the timer for image change state
+                print("State changed to image change to index 2")
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                # Let the red balls that already deployed continue to move
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+        
+        elif boss_state == BOSS_STATE_IMAGE_CHANGEBACK2:
+            if current_time - state_change_time >= image_change_duration:
+                boss_state = BOSS_STATE_IMAGE_CHANGEBACK1
+                state_change_time = current_time  # Reset the timer for image change
+                print("State changed to image change to index 3")
+                
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+                
+        elif boss_state == BOSS_STATE_IMAGE_CHANGEBACK1:
+            if current_time - state_change_time >= image_change_duration:
+                state_change_time = current_time  # Reset the timer for image change
+                boss_state = BOSS_STATE_SHOOTING
+                print("State changed to shooting lasers")
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+            else:
+                boss_image = cv2.imread('static/assets/boss_asset/bos_1.png', cv2.IMREAD_UNCHANGED)
+                move_red_balls()
+                draw_red_balls(combined_frame)
+                move_lasers()
+                draw_lasers(combined_frame)
+    else:
+        move_red_balls()
+        draw_red_balls(combined_frame)
+        move_lasers()
+        draw_lasers(combined_frame)
     
     return boss_state, state_change_time
 
@@ -973,14 +1014,47 @@ def show_text(frame, isDone):
     
     return frame, isDone
 
-# Function to scroll the background and move the player
+def is_five_fingers_extended(landmarks):
+    # Thumb tip and base (MCP joint)
+    thumb_tip = landmarks[mp_hands.HandLandmark.THUMB_TIP]
+    thumb_base = landmarks[mp_hands.HandLandmark.THUMB_MCP]
 
+    # Index tip and base (MCP joint)
+    index_tip = landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    index_base = landmarks[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+
+    # Middle tip and base (MCP joint)
+    middle_tip = landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+    middle_base = landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+
+    # Ring tip and base (MCP joint)
+    ring_tip = landmarks[mp_hands.HandLandmark.RING_FINGER_TIP]
+    ring_base = landmarks[mp_hands.HandLandmark.RING_FINGER_MCP]
+
+    # Pinky tip and base (MCP joint)
+    pinky_tip = landmarks[mp_hands.HandLandmark.PINKY_TIP]
+    pinky_base = landmarks[mp_hands.HandLandmark.PINKY_MCP]
+
+    # Check if each finger's tip is higher than its base (extended)
+    thumb_extended = thumb_tip.y < thumb_base.y
+    index_extended = index_tip.y < index_base.y
+    middle_extended = middle_tip.y < middle_base.y
+    ring_extended = ring_tip.y < ring_base.y
+    pinky_extended = pinky_tip.y < pinky_base.y
+
+    # Return True if all fingers are extended
+    return thumb_extended and index_extended and middle_extended and ring_extended and pinky_extended
+
+# Function to scroll the background and move the player
 def scroll_background(camera, isReset):
     global player_x, player_y, shots, player_image, boss_x, boss_y, boss_health, boss_rotation_angle, boss_image, boss_state, state_change_time, boss_image_index
     global state_change_time, isDead, last_player_y, isCheat, isCheatTriggered
-    global max_health, isGameTwoDone, isGameThreeDone, lasers, red_balls, boss_width, player_health
+    global max_health, isGameTwoDone, isGameThreeDone, lasers, red_balls, boss_width, player_health, isBossDead, isPaused, isPausedActive
     
     isAlreadyCenter = False
+    gesture_start_time = None
+    last_open_hand_time = 0
+    cooldown_period = 2 
     
     if isReset:
         # Player initial position (middle left)
@@ -1000,6 +1074,9 @@ def scroll_background(camera, isReset):
         isCheat = False
         isCheatTriggered = False
         isDead = False
+        isBossDead = False
+        isPaused = False
+        isPausedActive = False
     
     x_offset = 0
     sensitivity = 10  # Adjust sensitivity here
@@ -1023,9 +1100,9 @@ def scroll_background(camera, isReset):
 
     while True:
         from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
-        from app import change_game_three_state, is_game_three_done
+        from app import change_game_three_state, is_game_three_done, is_game_four_done, change_game_four_state
         
-        if boss_health <= max_health*0.8 and is_game_one_done == False:
+        if boss_health <= max_health*0.95 and is_game_one_done == False:
             change_game_one_state()
             print("Redirect to Game 1")
         elif boss_health <= max_health*0.6 and is_game_two_done == False:
@@ -1034,6 +1111,9 @@ def scroll_background(camera, isReset):
         elif boss_health <= max_health*0.4 and is_game_three_done == False:
             change_game_three_state()
             print("Redirect to Game 3")
+        elif boss_health <= max_health*0.2 and is_game_four_done == False:
+            change_game_four_state()
+            print("Redirect to Game 4")
         
         # Move the image by changing the x_offset
         x_offset -= 10  # Adjust speed here
@@ -1104,6 +1184,25 @@ def scroll_background(camera, isReset):
                 isCheat = True
                 isCheatTriggered = True
                 isDone = False
+        
+        # if right_hand_gesture == "open":
+        #     print("Palm hand detected")
+            
+        #     if isPaused:
+        #         isPaused = False
+        #     else:
+        #         isPaused = True
+            
+        #     if isPaused:
+        #         print("Pause is active")
+        #         isDead = not isDead
+        #         isBossDead = not isBossDead
+        #         pygame.mixer.music.pause()
+        #     elif not isPaused:
+        #         print("Pause deactivated")
+        #         isDead = not isDead
+        #         isBossDead = not isBossDead
+        #         pygame.mixer.music.unpause()
 
         # If the player is dead, prevent any further movement or actions
         else:
@@ -1113,6 +1212,43 @@ def scroll_background(camera, isReset):
             
             player_x = last_player_x
             player_y = last_player_y
+            
+        current_time_pause = time.time()
+
+        if right_hand_gesture == "open":
+            if gesture_start_time is None:
+                gesture_start_time = current_time
+            elif current_time_pause - gesture_start_time >= 2:
+                if current_time_pause - last_open_hand_time >= cooldown_period:
+                    print("Palm hand detected for 2 seconds")
+                    
+                    if isPaused:
+                        isPaused = False
+                    else:
+                        isPaused = True
+                    
+                    if isPaused:
+                        print("Pause is active")
+                        isDead = not isDead
+                        isBossDead = not isBossDead
+                        
+                        if not isCheatTriggered:
+                            isCheat = True
+                            
+                        pygame.mixer.music.pause()
+                    elif not isPaused:
+                        print("Pause deactivated")
+                        isDead = not isDead
+                        isBossDead = not isBossDead
+                        
+                        if not isCheatTriggered:
+                            isCheat = False
+                        
+                        pygame.mixer.music.unpause()
+
+                    last_open_hand_time = current_time_pause
+        else:
+            gesture_start_time = None
 
         # Draw the background and player image
         combined_frame = resized_bg.copy()
@@ -1233,8 +1369,8 @@ def scroll_background(camera, isReset):
                 text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
                 
                 # Positioning the text at the bottom-right corner
-                text_x = combined_frame.shape[1] - text_size[0] - 20  # 10 pixels from the right
-                text_y = combined_frame.shape[0] - 70  # 50 pixels from the bottom (adjusted)
+                text_x = combined_frame.shape[1] - text_size[0] - 20
+                text_y = combined_frame.shape[0] - 70
                 
                 rect_color = (130, 130, 130)  # grey rectangle
                 rect_thickness = -1  # Filled rectangle
@@ -1251,6 +1387,22 @@ def scroll_background(camera, isReset):
         #player health
         combined_frame, isDead = check_collisions_and_update_health(combined_frame, hit_sound)
         combined_frame = draw_health(combined_frame)
+        
+        if isPaused:
+            overlay = combined_frame.copy()
+            alpha = 0.7
+            cv2.rectangle(overlay, (0, 0), (video_width, video_height), (0, 0, 0), -1)
+            cv2.addWeighted(overlay, alpha, combined_frame, 1 - alpha, 0, combined_frame)
+            
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 5
+            font_color = (255, 255, 255)
+            thickness = 10
+            text = "Game Paused"
+            text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+            text_x = (video_width - text_size[0]) // 2
+            text_y = (video_height + text_size[1]) // 2
+            cv2.putText(combined_frame, text, (text_x, text_y), font, font_scale, font_color, thickness)
 
         # Return the combined frame for displaying in Flask template
         yield (b'--frame\r\n'
