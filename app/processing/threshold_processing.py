@@ -69,38 +69,41 @@ def generate_threshold_frames(camera, frame_width=800, frame_height=600):
         # If hand is detected, update the thumb path
         if results.multi_hand_landmarks:
             line_alpha = 1.0  # Reset alpha when hand is detected
-            for hand_landmarks in results.multi_hand_landmarks:
-                # Get thumb tip position
-                thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+            for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                # Determine if it's the right hand
+                hand_label = handedness.classification[0].label
+                if hand_label == 'Right':  # Process only the right hand
+                    # Get thumb tip position
+                    thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
 
-                # Convert to screen coordinates
-                thumb_x = int(thumb_tip.x * frame_width)
-                thumb_y = int(thumb_tip.y * frame_height)
+                    # Convert to screen coordinates
+                    thumb_x = int(thumb_tip.x * frame_width)
+                    thumb_y = int(thumb_tip.y * frame_height)
 
-                # Add the current thumb position to the path, but reduce sensitivity
-                if len(thumb_path) == 0 or np.linalg.norm(
-                    np.array(thumb_path[-1]) - np.array((thumb_x, thumb_y))
-                ) > 10:  # Only add if the distance is >10 pixels
-                    thumb_path.append((thumb_x, thumb_y))
+                    # Add the current thumb position to the path, but reduce sensitivity
+                    if len(thumb_path) == 0 or np.linalg.norm(
+                        np.array(thumb_path[-1]) - np.array((thumb_x, thumb_y))
+                    ) > 10:  # Only add if the distance is >10 pixels
+                        thumb_path.append((thumb_x, thumb_y))
 
-                # Get index finger tip position for swipe gesture
-                index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                index_x = int(index_tip.x * frame_width)
+                    # Get index finger tip position for swipe gesture
+                    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    index_x = int(index_tip.x * frame_width)
 
-                # Detect horizontal swipe
-                if previous_x is not None:
-                    delta_x = index_x - previous_x
-                    if delta_x > 15:  # Swipe right
-                        with lock:
-                            threshold_level = min(255, threshold_level + 5)
-                            print(f"Threshold level increased to {threshold_level}")
-                    elif delta_x < -15:  # Swipe left
-                        with lock:
-                            threshold_level = max(0, threshold_level - 5)
-                            print(f"Threshold level decreased to {threshold_level}")
+                    # Detect horizontal swipe
+                    if previous_x is not None:
+                        delta_x = index_x - previous_x
+                        if delta_x > 15:  # Swipe right
+                            with lock:
+                                threshold_level = min(255, threshold_level + 5)
+                                print(f"Threshold level increased to {threshold_level}")
+                        elif delta_x < -15:  # Swipe left
+                            with lock:
+                                threshold_level = max(0, threshold_level - 5)
+                                print(f"Threshold level decreased to {threshold_level}")
 
-                # Update previous x position
-                previous_x = index_x
+                    # Update previous x position
+                    previous_x = index_x
         else:
             # If no hands are detected, gradually fade out the line
             if len(thumb_path) > 0:

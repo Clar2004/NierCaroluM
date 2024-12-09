@@ -51,7 +51,7 @@ sse.onmessage = function (event) {
    console.log("Status:", event.data);
 
    if (event.data === "redirect") {
-      // sse.close();
+      sse.close();
       const loadingOverlay = document.getElementById('loading-overlay');
       loadingOverlay.style.display = 'flex';
 

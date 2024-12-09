@@ -117,40 +117,43 @@ def game_loop(cap):
 
         # If hands are detected
         if results.multi_hand_landmarks:
-            for landmarks in results.multi_hand_landmarks:
-                # Track the right-hand index finger
-                index_tip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                x, y = int(index_tip.x * frame.shape[1]), int(index_tip.y * frame.shape[0])
+            for landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                # Check which hand it is (left or right)
+                hand_label = handedness.classification[0].label
+                
+                # Process only the right hand
+                if hand_label == 'Right':
+                    # Get the right hand landmarks
+                    index_tip = landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    thumb_tip = landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
+                    x, y = int(index_tip.x * frame.shape[1]), int(index_tip.y * frame.shape[0])
 
-                # Check for pinch gesture
-                if is_pinch(landmarks) and game_started:
-                    if drawing:
-                        print("Pinch detected! Stop drawing for now.")
-                        drawing = False  # Stop drawing immediately, but don't reset the game
-                        prev_position = None  # Reset previous position
-                        smoothed_position = None  # Reset smoothed position
-                elif not is_pinch(landmarks) and game_started:
-                    drawing = True
-                    
-                if drawing and game_started:
-                    prev_position, smoothed_position = draw_on_canvas(x, y, canvas, prev_position, smoothed_position, alpha)
+                    # Check for pinch gesture
+                    if is_pinch(landmarks) and game_started:
+                        if drawing:
+                            print("Pinch detected! Stop drawing for now.")
+                            drawing = False  # Stop drawing immediately, but don't reset the game
+                            prev_position = None  # Reset previous position
+                            smoothed_position = None  # Reset smoothed position
+                    elif not is_pinch(landmarks) and game_started:
+                        drawing = True
 
-                # Check if thumbs up gesture is detected
-                if is_thumbs_up(landmarks):
+                    if drawing and game_started:
+                        prev_position, smoothed_position = draw_on_canvas(x, y, canvas, prev_position, smoothed_position, alpha)
 
-                    if not game_started and waiting_for_thumbs_up:
-                        # from app import match_start
-                        # match_start()
-                        
-                        # Start the countdown for 3 seconds after thumbs-up detected
-                        trigger_start_countdown = True
-                        last_thumbs_up_time = time.time()  # Start the drawing timer
-                        waiting_for_thumbs_up = False  # No longer waiting for thumbs-up
-                        # print("Thumbs up detected! Starting countdown...")
-                        canvas = np.ones((480, 640, 3), dtype=np.uint8) * 255  # Reset canvas
-                        
-                        from app import count_down_start
-                        count_down_start()
+                    # Check if the thumbs up gesture is detected for the right hand
+                    if is_thumbs_up(landmarks):
+                        if not game_started and waiting_for_thumbs_up:
+                            from app import count_down_start
+                            count_down_start()
+                            # Start the countdown for 3 seconds after thumbs-up detected
+                            trigger_start_countdown = True
+                            last_thumbs_up_time = time.time()  # Start the drawing timer
+                            waiting_for_thumbs_up = False  # No longer waiting for thumbs-up
+                            
+                            # Reset canvas and start the game countdown
+                            print("Thumbs up detected! Starting countdown...")
+                            canvas = np.ones((480, 640, 3), dtype=np.uint8) * 255  # Reset canvas
                         
         # Handle countdown logic (decrease countdown time as seconds pass)
         if trigger_start_countdown and last_thumbs_up_time is not None:
@@ -165,9 +168,9 @@ def game_loop(cap):
                 drawing = True  # Start drawing
                 trigger_start_countdown = False  # Stop countdown trigger
                 last_thumbs_up_time = None
-                drawing_start_time = time.time()  # Initialize the drawing timer at game start
                 from app import drawing_start
                 drawing_start()
+                drawing_start_time = time.time()  # Initialize the drawing timer at game start
 
         # Handle drawing timer and 30-second rule
         if game_started and drawing_start_time is not None:
@@ -176,15 +179,14 @@ def game_loop(cap):
             
             time_elapsed = time.time() - drawing_start_time
             if time_elapsed > 5:  # Disable drawing after 10 seconds for testing
+                from app import count_down_end
+                count_down_end()
                 game_started = False
                 drawing_start_time = None  # Reset drawing timer
                 drawing = False
                 trigger_end_countdown = True
                 last_thumbs_up_time = time.time()  # Start the countdown for game reset
                 # print("Drawing time ended! Waiting for 3 seconds before resetting...")
-                
-                from app import count_down_end
-                count_down_end()
 
         # Reset game after 3 seconds of idle time (if drawing is done)
         if trigger_end_countdown and last_thumbs_up_time is not None:
@@ -203,6 +205,7 @@ def game_loop(cap):
                 set_match_accuracy(similarity_percentage)
                 print(f"Accuracy: {similarity_percentage}")
                 send_accuracy()
+                
 
         # Blend the frame with the canvas and draw text
         canvas_resized = cv2.resize(canvas, (frame.shape[1], frame.shape[0]))

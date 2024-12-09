@@ -316,17 +316,18 @@ def change_mini_game_two_state():
     
 @app.route('/game_four', methods=['POST'])
 def change_mini_game_four_state():
+    global is_mini_game_four_done, is_game_four_done
     data = request.get_json() 
     if data :
         
         message = data.get('message', 'No message provided')
         print(message)
-        if message != "Sucess":
+        if message != "Success":
             return jsonify({"message": "Invalid message"}), 400
-        global is_mini_game_four_done
         is_mini_game_four_done = True
+        is_game_four_done = True
             
-        print("Mini game one is done!")
+        print("Mini game four is done!")
         return jsonify({"message": "Mini game two is done!"}),200
     else :
         return jsonify({"message": "No message provided"}), 400
@@ -358,6 +359,7 @@ def sse_game_status():
                 isDead = False
                 yield f"data: dead\n\n"
                 break
+            
             time.sleep(1)
 
     return Response(event_stream(), content_type='text/event-stream')
@@ -502,6 +504,9 @@ def sse_mini_game_four():
         global isSendAccuracy, targetImageIndex, match_accuracy
         
         while True:
+            if is_mini_game_four_done:
+                print("is mini game four true", is_mini_game_four_done)
+            
             # Memeriksa apakah game sudah selesai
             if is_game_four_done and is_mini_game_four_done:
                 yield f"data: redirect\n\n"
@@ -522,7 +527,8 @@ def sse_mini_game_four():
                 isTriggered = False
                 yield f"data: countdown_end\n\n"
             
-            time.sleep(0.001)
+            yield "data: heartbeat\n\n" 
+            time.sleep(1)
             
     return Response(event_stream(), content_type='text/event-stream')
 
@@ -535,9 +541,11 @@ def sse_mini_game_four_accuracy():
             if isSendAccuracy:
                 isSendAccuracy = False
                 targetImageIndex = None
+                print("Sending accuracy:", match_accuracy)
                 yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {match_accuracy}}}\n\n"
             
-            time.sleep(0.01)
+            yield "data: heartbeat\n\n"
+            time.sleep(1)
             
     return Response(event_stream(), content_type='text/event-stream')
 

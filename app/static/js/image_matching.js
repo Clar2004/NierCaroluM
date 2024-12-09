@@ -39,9 +39,9 @@ function startCountdown(seconds, stateNum) {
 
       countdownValue--;
 
-      if (countdownValue == 2 && stateNum == 3) {
-         selectRandomImage();
-      }
+      // if (countdownValue == 2 && stateNum == 3) {
+      //    selectRandomImage();
+      // }
 
       if (countdownValue < 0) {
          clearInterval(countdownInterval);
@@ -79,7 +79,7 @@ function selectRandomImage() {
 
 window.onload = function () {
    document.getElementById('random-image').src = baseImage;
-   selectRandomImage();
+   // selectRandomImage();
    countdownMessage.textContent = "Thumbs up to start the game...";
    accuracyText.textContent = ``;
 };
@@ -141,6 +141,7 @@ eventSource.onmessage = function (event) {
    // Handle different events
    if (event.data === 'countdown_start') {
       if (isTriggered === false) {
+         selectRandomImage();
          startCountdown(3, 1);
          isTriggered = true;
          isGameEnd = false;
@@ -148,49 +149,48 @@ eventSource.onmessage = function (event) {
    } else if (event.data === 'countdown_end') {
       startCountdown(3, 3);
    } else if (event.data === 'drawing_start') {
-      startCountdown(5, 2);
-   } 
+      startCountdown(4, 2);
+   } else if (event.data === 'redirect'){
+      const loadingOverlay = document.getElementById('loading-overlay');
+      loadingOverlay.style.display = 'flex';
+
+      setTimeout(() => {
+         window.location.href = "/combat";  // Redirect after 3 seconds
+      }, 4000);  // Adjust the timing here
+   }
 };
 
+// SSE connection for accuracy updates
 const eventSource2 = new EventSource('/sse_mini_game_four_accuracy');
 
 eventSource2.onmessage = function (event) {
    const data = JSON.parse(event.data);
 
    if (data.event === 'accuracy') {
-      const accuracy = data.accuracy;
-      accuracy_match = accuracy;
+      accuracy_match = data.accuracy;
 
-      if (isCheatActivated){
+      if (isCheatActivated) {
          console.log("Cheat activated, accuracy set to 999.99");
-         accuracy_match = 999.99;
+         accuracy_match = 999.99;  // For cheat mode
       }
 
-      if (accuracy_match > 70) {
-         const loadingOverlay = document.getElementById('loading-overlay');
-         loadingOverlay.style.display = 'flex';
+      // Update accuracy text after the game
+      accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
 
-         input = "Sucess";
+      // Perform action based on accuracy
+      if (accuracy_match > 70) {
 
          fetch("/game_four", {
             method: "POST",
-            headers: {
-               "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ message: input }),
-         })
-
-         setTimeout(() => {
-            window.location.href = "/combat";
-         }, 4000);
-         eventSource.close();
-         eventSource2.close();
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "Success" }),
+         });
       }
 
-      console.log("Accuracy:", accuracy);
+      console.log("Accuracy:", accuracy_match);
       isReceived = true;
    }
-}
+};
 
 eventSource.onerror = function (error) {
    console.error("EventSource failed:", error);

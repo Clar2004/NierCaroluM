@@ -95,8 +95,8 @@ health_bar_x = 50  # X-position of the health bar
 health_bar_y = 50  # Y-position of the health bar
 
 # Maximum health value for the boss
-max_health = 1000
-boss_health = 1000
+max_health = 500
+boss_health = 500
 
 #load the circle image
 red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_UNCHANGED) 
@@ -296,10 +296,12 @@ def shoot_red_ball(boss_x, boss_y, boss_rotation_angle):
 
 # Function to move red balls based on their direction
 def move_red_balls():
+    global isPaused
     """Move all red balls in their respective directions."""
     global red_balls
     for ball in red_balls[:]:
-        ball.move()
+        if not isPaused:
+            ball.move()
         if ball.is_offscreen(video_width, video_height):
             red_balls.remove(ball)
 
@@ -478,7 +480,7 @@ def move_boss(isAlreadyCenter):
     screen_center_x = video_width // 2
     
     # Move boss leftwards until it reaches the center of the screen
-    if boss_x > screen_center_x:
+    if boss_x > screen_center_x and not isPaused:
         boss_x -= boss_speed  # Move boss leftwards
         
     if isBossDead and not isPaused:
@@ -784,9 +786,10 @@ def shoot_lasers(boss_x, boss_y, boss_rotation_angle):
 # Function to move lasers around the boss in anticlockwise direction
 def move_lasers():
     """Move all red balls in their respective directions."""
-    global red_balls
+    global red_balls, isPaused
     for ball in red_balls[:]:
-        ball.move()
+        if not isPaused:
+            ball.move()
         if ball.is_offscreen(video_width, video_height):
             red_balls.remove(ball)
 
@@ -1102,18 +1105,22 @@ def scroll_background(camera, isReset):
         from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
         from app import change_game_three_state, is_game_three_done, is_game_four_done, change_game_four_state
         
-        if boss_health <= max_health*0.8 and is_game_one_done == False:
-            change_game_one_state()
-            print("Redirect to Game 1")
-        elif boss_health <= max_health*0.6 and is_game_two_done == False:
-            change_game_two_state()
-            print("Redirect to Game 2")
-        elif boss_health <= max_health*0.4 and is_game_three_done == False:
-            change_game_three_state()
-            print("Redirect to Game 3")
-        elif boss_health <= max_health*0.2 and is_game_four_done == False:
+        if boss_health <= max_health*0.95 and is_game_four_done == False:
             change_game_four_state()
             print("Redirect to Game 4")
+        
+        # if boss_health <= max_health*0.8 and is_game_one_done == False:
+        #     change_game_one_state()
+        #     print("Redirect to Game 1")
+        # elif boss_health <= max_health*0.6 and is_game_two_done == False:
+        #     change_game_two_state()
+        #     print("Redirect to Game 2")
+        # elif boss_health <= max_health*0.4 and is_game_three_done == False:
+        #     change_game_three_state()
+        #     print("Redirect to Game 3")
+        # elif boss_health <= max_health*0.2 and is_game_four_done == False:
+        #     change_game_four_state()
+        #     print("Redirect to Game 4")
         
         # Move the image by changing the x_offset
         x_offset -= 10  # Adjust speed here
@@ -1121,7 +1128,8 @@ def scroll_background(camera, isReset):
             x_offset = 0  # Reset the offset when it moves off-screen
 
         # Create a copy of the background and shift it horizontally
-        shifted_bg = np.roll(bg_image, x_offset, axis=1)
+        if not isPaused:
+            shifted_bg = np.roll(bg_image, x_offset, axis=1)
 
         # Resize background to fit the video dimensions
         resized_bg = cv2.resize(shifted_bg, (video_width, video_height))
@@ -1232,8 +1240,8 @@ def scroll_background(camera, isReset):
                         isDead = not isDead
                         isBossDead = not isBossDead
                         
-                        if not isCheatTriggered:
-                            isCheat = True
+                        # if not isCheatTriggered:
+                        #     isCheat = True
                             
                         pygame.mixer.music.pause()
                     elif not isPaused:
@@ -1241,8 +1249,8 @@ def scroll_background(camera, isReset):
                         isDead = not isDead
                         isBossDead = not isBossDead
                         
-                        if not isCheatTriggered:
-                            isCheat = False
+                        # if not isCheatTriggered:
+                        #     isCheat = False
                         
                         pygame.mixer.music.unpause()
 

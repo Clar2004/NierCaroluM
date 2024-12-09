@@ -4,7 +4,6 @@ import mediapipe as mp
 import time
 import pygame
 
-
 # Initialize MediaPipe Hand detection
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -127,85 +126,87 @@ def generate_maze_interaction_frames(camera):
         results = hands.process(rgb_frame)
 
         if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                # Get index finger tip position
-                index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                tip_x, tip_y = int(index_tip.x * width), int(index_tip.y * height)
+            for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                hand_label = handedness.classification[0].label
+                if hand_label == 'Right':
+                    # Get index finger tip position
+                    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    tip_x, tip_y = int(index_tip.x * width), int(index_tip.y * height)
 
-                # Add boundary checks for tip_x and tip_y
-                tip_x = max(0, min(tip_x, width - 1))
-                tip_y = max(0, min(tip_y, height - 1))
+                    # Add boundary checks for tip_x and tip_y
+                    tip_x = max(0, min(tip_x, width - 1))
+                    tip_y = max(0, min(tip_y, height - 1))
 
-                # Check for five fingers extended
-                if are_all_fingers_extended(hand_landmarks, height):
-                    if five_finger_start_time is None:
-                        five_finger_start_time = time.time()
+                    # Check for five fingers extended
+                    if are_all_fingers_extended(hand_landmarks, height):
+                        if five_finger_start_time is None:
+                            five_finger_start_time = time.time()
+                        else:
+                            elapsed_time = time.time() - five_finger_start_time
+                            if elapsed_time >= five_finger_time_threshold and is_cheat_triggered == False:
+                                cheat_mode_activated = True
+                                is_cheat_triggered = True
+                                print("Cheat mode activated: Edge and corner detection disabled.")
+                                
+                                cheat_text = "Cheat Activated"
+                                
+                                activate_cheat_mode()
+        
                     else:
-                        elapsed_time = time.time() - five_finger_start_time
-                        if elapsed_time >= five_finger_time_threshold and is_cheat_triggered == False:
-                            cheat_mode_activated = True
-                            is_cheat_triggered = True
-                            print("Cheat mode activated: Edge and corner detection disabled.")
-                            
-                            cheat_text = "Cheat Activated"
-                            
-                            activate_cheat_mode()
-    
-                else:
-                    five_finger_start_time = None
+                        five_finger_start_time = None
 
-                # If the game hasn't started yet, check if user touches any entry point
-                if not game_started:
-                    for point in entry_points:
-                        px, py = point 
-                        distance = np.sqrt((tip_x - px) ** 2 + (tip_y - py) ** 2)
-                        if distance <= 20:  # If the finger touches the entry circle
-                            game_started = True
-                            thumb_path = []  # Clear any existing path
-                            print("Game started: Player entered the maze.")
-                            break
+                    # If the game hasn't started yet, check if user touches any entry point
+                    if not game_started:
+                        for point in entry_points:
+                            px, py = point 
+                            distance = np.sqrt((tip_x - px) ** 2 + (tip_y - py) ** 2)
+                            if distance <= 20:  # If the finger touches the entry circle
+                                game_started = True
+                                thumb_path = []  # Clear any existing path
+                                print("Game started: Player entered the maze.")
+                                break
 
-                # Track the finger path always (whether game started or not)
-                thumb_path.append((tip_x, tip_y))
+                    # Track the finger path always (whether game started or not)
+                    thumb_path.append((tip_x, tip_y))
 
-                # Draw the path on the maze image (white line)
-                for i in range(1, len(thumb_path)):
-                    x1, y1 = thumb_path[i - 1]
-                    x2, y2 = thumb_path[i]
-                    # Ensure the coordinates stay within bounds
-                    x1, y1 = max(0, min(x1, width - 1)), max(0, min(y1, height - 1))
-                    x2, y2 = max(0, min(x2, width - 1)), max(0, min(y2, height - 1))
-                    cv2.line(resized_maze_image, (x1, y1), (x2, y2), (255, 255, 255), 2)
+                    # Draw the path on the maze image (white line)
+                    for i in range(1, len(thumb_path)):
+                        x1, y1 = thumb_path[i - 1]
+                        x2, y2 = thumb_path[i]
+                        # Ensure the coordinates stay within bounds
+                        x1, y1 = max(0, min(x1, width - 1)), max(0, min(y1, height - 1))
+                        x2, y2 = max(0, min(x2, width - 1)), max(0, min(y2, height - 1))
+                        cv2.line(resized_maze_image, (x1, y1), (x2, y2), (255, 255, 255), 2)
 
-                # Apply game rules if the game has started
-                if game_started and health_points > 0:
-                    # Check if the player reaches the CPU
-                    distance_to_cpu = np.sqrt((tip_x - cpu_center[0]) ** 2 + (tip_y - cpu_center[1]) ** 2)
-                    if distance_to_cpu <= cpu_radius:
-                        print("Player reached the CPU!")
-                        change_mini_game_three_state()
+                    # Apply game rules if the game has started
+                    if game_started and health_points > 0:
+                        # Check if the player reaches the CPU
+                        distance_to_cpu = np.sqrt((tip_x - cpu_center[0]) ** 2 + (tip_y - cpu_center[1]) ** 2)
+                        if distance_to_cpu <= cpu_radius:
+                            print("Player reached the CPU!")
+                            change_mini_game_three_state()
 
-                    # Check collision with dilated edges or corners (only if cheat mode is not activated)
-                    if not cheat_mode_activated:
-                        if resized_edges[tip_y, tip_x] != 0 or resized_corners[tip_y, tip_x] > 0.01 * resized_corners.max():
-                            health_points -= 1
-                            print(f"Health updated: {health_points} health points remaining.")
-                            thumb_path = []  # Clear the path
-
-                            # Emit health update only if health changes
-                            if last_health_emit != health_points:
-                                    last_health_emit = health_points
-                                    update_health_(health_points)
-
-                            if health_points == 0:
-                                print("Game Over: Line cleared after 3 collisions.")
-                                # Reset the game
-                                health_points = 3
-                                game_started = False
-                                cheat_mode_activated = False
+                        # Check collision with dilated edges or corners (only if cheat mode is not activated)
+                        if not cheat_mode_activated:
+                            if resized_edges[tip_y, tip_x] != 0 or resized_corners[tip_y, tip_x] > 0.01 * resized_corners.max():
+                                health_points -= 1
+                                print(f"Health updated: {health_points} health points remaining.")
                                 thumb_path = []  # Clear the path
-                                print("Game reset: Health restored to 3 and entry points redrawn.")
-                                update_health_(health_points)
+
+                                # Emit health update only if health changes
+                                if last_health_emit != health_points:
+                                        last_health_emit = health_points
+                                        update_health_(health_points)
+
+                                if health_points == 0:
+                                    print("Game Over: Line cleared after 3 collisions.")
+                                    # Reset the game
+                                    health_points = 3
+                                    game_started = False
+                                    cheat_mode_activated = False
+                                    thumb_path = []  # Clear the path
+                                    print("Game reset: Health restored to 3 and entry points redrawn.")
+                                    update_health_(health_points)
 
             # Encode and yield the frame
             ret, buffer = cv2.imencode('.jpg', resized_maze_image)
