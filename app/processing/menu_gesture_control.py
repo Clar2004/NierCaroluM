@@ -186,7 +186,7 @@ def detect_gestures_and_stream(cap_camera):
             # Check if 5 seconds have passed since the last click
             current_time = time.time()
             if is_cursor_hovering(cursor_x, cursor_y, text_x, text_y, text_size[0], text_size[1]) and last_emitted['gesture'] == 'click':
-                if current_time - last_click_time >= 3:  # If 5 seconds have passed
+                if current_time - last_click_time >= 2:  # If 5 seconds have passed
                     print("Play Demo clicked!")
                     from app import play_demo
                     play_demo()

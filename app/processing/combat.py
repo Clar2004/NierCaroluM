@@ -1102,7 +1102,7 @@ def scroll_background(camera, isReset):
         from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
         from app import change_game_three_state, is_game_three_done, is_game_four_done, change_game_four_state
         
-        if boss_health <= max_health*0.95 and is_game_one_done == False:
+        if boss_health <= max_health*0.8 and is_game_one_done == False:
             change_game_one_state()
             print("Redirect to Game 1")
         elif boss_health <= max_health*0.6 and is_game_two_done == False:
@@ -1218,7 +1218,7 @@ def scroll_background(camera, isReset):
         if right_hand_gesture == "open":
             if gesture_start_time is None:
                 gesture_start_time = current_time
-            elif current_time_pause - gesture_start_time >= 2:
+            elif current_time_pause - gesture_start_time >= 1:
                 if current_time_pause - last_open_hand_time >= cooldown_period:
                     print("Palm hand detected for 2 seconds")
                     
