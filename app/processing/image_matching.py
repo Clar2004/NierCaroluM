@@ -163,7 +163,7 @@ def game_loop(cap):
             # Time elapsed since thumbs up was detected
             time_elapsed = time.time() - last_thumbs_up_time
 
-            if time_elapsed > 4:
+            if time_elapsed > 5:
                 game_started = True  # Enable drawing after countdown
                 drawing = True  # Start drawing
                 trigger_start_countdown = False  # Stop countdown trigger
@@ -178,7 +178,7 @@ def game_loop(cap):
             # print("drawing...")
             
             time_elapsed = time.time() - drawing_start_time
-            if time_elapsed > 5:  # Disable drawing after 10 seconds for testing
+            if time_elapsed > 30:  # Disable drawing after 10 seconds for testing
                 from app import count_down_end
                 count_down_end()
                 game_started = False

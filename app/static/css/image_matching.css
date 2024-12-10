@@ -20,15 +20,14 @@ body {
 .video-container {
    position: relative;
    margin-bottom: 20px;
-   right: 3%;
 }
 
 .video-feed {
-   width: 100%;
-   max-width: 1000px;
+   max-width: 95%;
    height: auto;
    border-radius: 8px;
    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+   box-sizing: content-box;
 }
 
 .info-container {
@@ -43,8 +42,8 @@ body {
 }
 
 .random-image {
-   width: 300px;
-   height: 300px;
+   width: 350px;
+   height: 350px;
    object-fit: cover;
    border-radius: 8px;
    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -53,6 +52,8 @@ body {
 .right_part{
    display: flex;
    flex-direction: column;
+
+   position: relative;
 }
 
 #cheat-text {

@@ -31,18 +31,18 @@ setTimeout(() => {
 }, 100);
 
 function showCheatText() {
-      const cheatTextElement = document.getElementById('cheat-text');
+   const cheatTextElement = document.getElementById('cheat-text');
 
-      // Ensure data.message is available and then show the cheat text
-      if (cheatTextElement ) {
-         cheatTextElement.textContent = "Cheat code activated!";
-         cheatTextElement.style.display = 'block';
+   // Ensure data.message is available and then show the cheat text
+   if (cheatTextElement) {
+      cheatTextElement.textContent = "Cheat code activated!";
+      cheatTextElement.style.display = 'block';
 
-         // Hide cheat text after 3 seconds
-         setTimeout(() => {
-            cheatTextElement.style.display = 'none';
-         }, 3000);
-      }
+      // Hide cheat text after 3 seconds
+      setTimeout(() => {
+         cheatTextElement.style.display = 'none';
+      }, 3000);
+   }
 }
 
 const sse = new EventSource('/sse_mini_game_three');

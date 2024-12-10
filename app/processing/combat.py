@@ -1105,22 +1105,18 @@ def scroll_background(camera, isReset):
         from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
         from app import change_game_three_state, is_game_three_done, is_game_four_done, change_game_four_state
         
-        if boss_health <= max_health*0.95 and is_game_four_done == False:
+        if boss_health <= max_health*0.8 and is_game_one_done == False:
+            change_game_one_state()
+            print("Redirect to Game 1")
+        elif boss_health <= max_health*0.6 and is_game_two_done == False:
+            change_game_two_state()
+            print("Redirect to Game 2")
+        elif boss_health <= max_health*0.4 and is_game_three_done == False:
+            change_game_three_state()
+            print("Redirect to Game 3")
+        elif boss_health <= max_health*0.2 and is_game_four_done == False:
             change_game_four_state()
             print("Redirect to Game 4")
-        
-        # if boss_health <= max_health*0.8 and is_game_one_done == False:
-        #     change_game_one_state()
-        #     print("Redirect to Game 1")
-        # elif boss_health <= max_health*0.6 and is_game_two_done == False:
-        #     change_game_two_state()
-        #     print("Redirect to Game 2")
-        # elif boss_health <= max_health*0.4 and is_game_three_done == False:
-        #     change_game_three_state()
-        #     print("Redirect to Game 3")
-        # elif boss_health <= max_health*0.2 and is_game_four_done == False:
-        #     change_game_four_state()
-        #     print("Redirect to Game 4")
         
         # Move the image by changing the x_offset
         x_offset -= 10  # Adjust speed here

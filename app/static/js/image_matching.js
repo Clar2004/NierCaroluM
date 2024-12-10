@@ -149,7 +149,7 @@ eventSource.onmessage = function (event) {
    } else if (event.data === 'countdown_end') {
       startCountdown(3, 3);
    } else if (event.data === 'drawing_start') {
-      startCountdown(4, 2);
+      startCountdown(30, 2);
    } else if (event.data === 'redirect'){
       const loadingOverlay = document.getElementById('loading-overlay');
       loadingOverlay.style.display = 'flex';
