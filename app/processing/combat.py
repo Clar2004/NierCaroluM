@@ -1111,7 +1111,7 @@ def scroll_background(camera, isReset):
         elif boss_health <= max_health*0.6 and is_game_two_done == False:
             change_game_two_state()
             print("Redirect to Game 2")
-        elif boss_health <= max_health*0.4 and is_game_three_done == False:
+        if boss_health <= max_health*0.4 and is_game_three_done == False:
             change_game_three_state()
             print("Redirect to Game 3")
         elif boss_health <= max_health*0.2 and is_game_four_done == False:

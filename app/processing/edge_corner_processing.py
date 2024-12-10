@@ -79,6 +79,9 @@ def generate_maze_interaction_frames(camera):
     pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
     pygame.mixer.music.play(loops=-1, start=0.0)
 
+    game_started = False
+    thumb_path = [] 
+
     while True:
         success, frame = camera.read()
         if not success:
@@ -88,7 +91,7 @@ def generate_maze_interaction_frames(camera):
         resized_maze_image = cv2.resize(maze_image, (width, height))
         resized_edges = cv2.resize(edges, (width, height))
         resized_corners = cv2.resize(corners, (width, height))
-
+        
         if not game_started:
             for point in entry_points:
                 cv2.circle(resized_maze_image, point, 20, (255, 255, 255), -1)
