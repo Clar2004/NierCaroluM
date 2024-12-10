@@ -6,7 +6,7 @@ import pygame
 
 # Initialize MediaPipe Hand detection
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(min_detection_confidence=0.6, min_tracking_confidence=0.6)
 
 thumb_path = []  # Track drawn line
 health_points = 3  # Initialize health points
@@ -153,10 +153,10 @@ def generate_maze_interaction_frames(camera):
                         # Draw the valid part of the line
                         cv2.line(resized_maze_image, (x1, y1), (x2, y2), (255, 255, 255), 2)
 
-                    # Check if the tip is directly within the CPU detection zone
-                    distance_to_cpu = np.sqrt((tip_x - cpu_center[0]) ** 2 + (tip_y - cpu_center[1]) ** 2)
-                    if distance_to_cpu <= cpu_radius:
-                        change_mini_game_three_state()
+                    # # Check if the tip is directly within the CPU detection zone
+                    # distance_to_cpu = np.sqrt((tip_x - cpu_center[0]) ** 2 + (tip_y - cpu_center[1]) ** 2)
+                    # if distance_to_cpu <= cpu_radius:
+                    #     change_mini_game_three_state()
 
             ret, buffer = cv2.imencode('.jpg', resized_maze_image)
             frame = buffer.tobytes()
