@@ -84,12 +84,26 @@ def draw_on_canvas(cursor_x, cursor_y, canvas, prev_position, smoothed_position,
 
 def game_loop(cap):
     global prev_position, smoothed_position, drawing, drawing_start_time, countdown_time, last_thumbs_up_time, game_started, waiting_for_thumbs_up
-    global trigger_end_countdown, trigger_start_countdown
+    global trigger_end_countdown, trigger_start_countdown, countdown_started
 
     alpha = 0.2  # Smoothing factor
     isInitialized = False
     canvas = None
     random_number = -1
+    
+    game_started = False
+    drawing = False
+    drawing_start_time = None
+    last_thumbs_up_time = None
+    waiting_for_thumbs_up = True
+    trigger_start_countdown = False
+    trigger_end_countdown = False
+    prev_position = None
+    smoothed_position = None
+    countdown_started = False
+    trigger_start_countdown = False 
+    trigger_end_countdown = False
+
     
     # Initialize the mixer for pygame
     pygame.mixer.init()
