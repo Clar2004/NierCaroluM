@@ -23,12 +23,12 @@ function updateHealth(currentHealth) {
    }
 }
 
-setTimeout(() => {
-   const videoContainer = document.createElement('div');
-   videoContainer.className = 'game-container';
-   videoContainer.innerHTML = '<img id="video" src="/maze_game_feed" alt="Maze Game Feed">';
-   document.body.appendChild(videoContainer);
-}, 100);
+// setTimeout(() => {
+//    const videoContainer = document.createElement('div');
+//    videoContainer.className = 'game-container';
+//    videoContainer.innerHTML = '<img id="video" src="/maze_game_feed" alt="Maze Game Feed">';
+//    document.body.appendChild(videoContainer);
+// }, 100);
 
 function showCheatText() {
    const cheatTextElement = document.getElementById('cheat-text');
