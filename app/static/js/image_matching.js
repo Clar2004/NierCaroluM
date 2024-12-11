@@ -1,7 +1,7 @@
 const images = [
-   "static/assets/image_matching/house.jpg",
-   "static/assets/image_matching/star.jpg",
-   "static/assets/image_matching/sword.png"
+   "static/assets/image_matching/circle.jpg",
+   "static/assets/image_matching/rhombus.jpg",
+   "static/assets/image_matching/square.jpg"
 ];
 
 const baseImage = "static/assets/image_matching/white_bg.jpg";
@@ -19,67 +19,53 @@ let isCheatActivated = false;
 let isGameEnd = false;
 
 // Start countdown with a given number of seconds
-function startCountdown(seconds, stateNum) {
-   countdownValue = seconds;
+// function startCountdown(seconds, stateNum) {
+//    countdownValue = seconds;
 
-   // Clear any previous countdown interval
-   clearInterval(countdownInterval);
+//    // Clear any previous countdown interval
+//    clearInterval(countdownInterval);
 
-   countdownInterval = setInterval(() => {
-      if (stateNum === 1) {
-         countdownMessage.textContent = `Game Starting in ${countdownValue}`;  // Use string interpolation
-         accuracyText.textContent = ``;
-      } else if (stateNum === 3) {
-         countdownMessage.textContent = "";
-         accuracyText.textContent = `Accuracy: Calculating...%`;
-      } else if (stateNum === 2) {
-         countdownMessage.textContent = `Time Remaining : ${countdownValue}`;  // Use string interpolation
-         accuracyText.textContent = ``;
-      }
+//    countdownInterval = setInterval(() => {
+//       if (stateNum === 1) {
+//          countdownMessage.textContent = `Game Starting in ${countdownValue}`;  // Use string interpolation
+//          accuracyText.textContent = ``;
+//       } else if (stateNum === 3) {
+//          countdownMessage.textContent = "";
+//          accuracyText.textContent = `Accuracy: Calculating...%`;
+//       } else if (stateNum === 2) {
+//          countdownMessage.textContent = `Time Remaining : ${countdownValue}`;  // Use string interpolation
+//          accuracyText.textContent = ``;
+//       }
 
-      countdownValue--;
+//       countdownValue--;
 
-      // if (countdownValue == 2 && stateNum == 3) {
-      //    selectRandomImage();
-      // }
+//       // if (countdownValue == 2 && stateNum == 3) {
+//       //    selectRandomImage();
+//       // }
 
-      if (countdownValue < 0) {
-         clearInterval(countdownInterval);
+//       if (countdownValue < 0) {
+//          clearInterval(countdownInterval);
 
-         if (stateNum == 3) {
-            countdownMessage.textContent = "Thumbs up to start...";
-            isTriggered = false;
-            if (isReceived == true) {
-               accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
-               isReceived = false;
-               isTriggered2 = false;
-               isGameEnd = true;
-            }
-         }
-      }
-   }, 1000);
-}
+//          if (stateNum == 3) {
+//             countdownMessage.textContent = "Thumbs up to start...";
+//             isTriggered = false;
+//             if (isReceived == true) {
+//                accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
+//                isReceived = false;
+//                isTriggered2 = false;
+//                isGameEnd = true;
+//             }
+//          }
+//       }
+//    }, 1000);
+// }
 
-function selectRandomImage() {
-   const randomIndex = Math.floor(Math.random() * images.length);
-   document.getElementById('random-image').src = images[randomIndex];
-
-   // Send the index of the selected image to the server
-   fetch('/set_image_index', {
-      method: 'POST',
-      headers: {
-         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ imageIndex: randomIndex })
-   })
-      .then(response => response.json())
-      .then(data => console.log("Image index sent to server:", data))
-      .catch(error => console.error("Error sending image index:", error));
+function selectImage(num) {
+   document.getElementById('random-image').src = images[num];
 }
 
 window.onload = function () {
    document.getElementById('random-image').src = baseImage;
-   // selectRandomImage();
    countdownMessage.textContent = "Thumbs up to start the game...";
    accuracyText.textContent = ``;
 };
@@ -137,26 +123,14 @@ const eventSource = new EventSource('/sse_mini_game_four');
 
 eventSource.onmessage = function (event) {
    console.log(event.data)
-
-   // Handle different events
-   if (event.data === 'countdown_start') {
-      if (isTriggered === false) {
-         selectRandomImage();
-         startCountdown(3, 1);
-         isTriggered = true;
-         isGameEnd = false;
-      }
-   } else if (event.data === 'countdown_end') {
-      startCountdown(3, 3);
-   } else if (event.data === 'drawing_start') {
-      startCountdown(30, 2);
-   } else if (event.data === 'redirect'){
+   
+   if (event.data === 'redirect'){
       const loadingOverlay = document.getElementById('loading-overlay');
       loadingOverlay.style.display = 'flex';
 
       setTimeout(() => {
-         window.location.href = "/combat";  // Redirect after 3 seconds
-      }, 4000);  // Adjust the timing here
+         window.location.href = "/combat";
+      }, 4000);
    }
 };
 
@@ -175,6 +149,7 @@ eventSource2.onmessage = function (event) {
       }
 
       // Update accuracy text after the game
+      countdownMessage.textContent = "Thumbs up to start...";
       accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
 
       // Perform action based on accuracy
@@ -189,6 +164,28 @@ eventSource2.onmessage = function (event) {
 
       console.log("Accuracy:", accuracy_match);
       isReceived = true;
+   }
+
+   else if (data.event === "game_start"){
+      index_image = data.image_index
+      selectImage(index_image);
+   }
+
+   else if (data.event === "countdown_start"){
+      data_time = data.time
+      countdownMessage.textContent = `Game Starting in ${data_time}s`;
+      accuracyText.textContent = ``;
+   }
+
+   else if (data.event === "drawing_start") {
+      data_time = data.time
+      countdownMessage.textContent = `Time Remaining: ${data_time}s`;
+      accuracyText.textContent = ``;
+   }
+
+   else if (data.event === "countdown_end"){
+      countdownMessage.textContent = "";
+      accuracyText.textContent = `Accuracy: Calculating...%`;
    }
 };
 

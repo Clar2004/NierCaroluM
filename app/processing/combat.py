@@ -95,8 +95,8 @@ health_bar_x = 50  # X-position of the health bar
 health_bar_y = 50  # Y-position of the health bar
 
 # Maximum health value for the boss
-max_health = 500
-boss_health = 500
+max_health = 1000
+boss_health = 1000
 
 #load the circle image
 red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_UNCHANGED) 

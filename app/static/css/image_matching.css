@@ -2,8 +2,7 @@
 body {
    margin: 0;
    padding: 0;
-   background-color: #4d4d4d;
-   /* Gray background */
+   background-color: #090006;
    display: flex;
    justify-content: center;
    align-items: center;
@@ -47,6 +46,7 @@ body {
    object-fit: cover;
    border-radius: 8px;
    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+   background-color: #ffffff;
 }
 
 .right_part{

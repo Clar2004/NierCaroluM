@@ -442,21 +442,28 @@ targetImageIndex = None
 isSendAccuracy = False
 match_accuracy = None
 
-def match_start():
-    global isGameStart
+targetImageIndex = None
+current_seconds = 0
+
+def match_start(num):
+    global isGameStart, targetImageIndex
     isGameStart = True
+    targetImageIndex = num
 
-def count_down_start():
-    global isCountDownStart
+def count_down_start(seconds):
+    global isCountDownStart, current_seconds
     isCountDownStart = True
+    current_seconds = seconds
 
-def drawing_start():
-    global isDrawingStart
+def drawing_start(seconds):
+    global isDrawingStart, current_seconds
     isDrawingStart = True
+    current_seconds = seconds
 
-def count_down_end():
-    global isCountDownEnd
+def count_down_end(seconds):
+    global isCountDownEnd, current_seconds
     isCountDownEnd = True
+    current_seconds = seconds
     
 def send_accuracy():
     global isSendAccuracy
@@ -512,20 +519,20 @@ def sse_mini_game_four():
                 yield f"data: redirect\n\n"
                 break
             
-            elif isGameStart:
-                isGameStart = False
-                yield f"data: game_start\n\n"
-            elif isCountDownStart and not isTriggered:
-                isCountDownStart = False
-                isTriggered = True
-                yield f"data: countdown_start\n\n"
-            elif isDrawingStart:
-                isDrawingStart = False
-                yield f"data: drawing_start\n\n"
-            elif isCountDownEnd:
-                isCountDownEnd = False
-                isTriggered = False
-                yield f"data: countdown_end\n\n"
+            # elif isGameStart:
+            #     isGameStart = False
+            #     yield f"data: game_start\n\n"
+            # elif isCountDownStart and not isTriggered:
+            #     isCountDownStart = False
+            #     isTriggered = True
+            #     yield f"data: countdown_start\n\n"
+            # elif isDrawingStart:
+            #     isDrawingStart = False
+            #     yield f"data: drawing_start\n\n"
+            # elif isCountDownEnd:
+            #     isCountDownEnd = False
+            #     isTriggered = False
+            #     yield f"data: countdown_end\n\n"
             
             yield "data: heartbeat\n\n" 
             time.sleep(1)
@@ -536,31 +543,46 @@ def sse_mini_game_four():
 def sse_mini_game_four_accuracy():
     def event_stream():
         global isSendAccuracy, targetImageIndex, match_accuracy
-        
+        global isGameStart, isCountDownStart, current_seconds, isTriggered
+        global isDrawingStart, isCountDownEnd
+                
         while True:
             if isSendAccuracy:
                 isSendAccuracy = False
-                targetImageIndex = None
                 print("Sending accuracy:", match_accuracy)
                 yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {match_accuracy}}}\n\n"
             
-            yield "data: heartbeat\n\n"
-            time.sleep(1)
+            elif isGameStart:
+                isGameStart = False
+                print("Sending image index:", targetImageIndex)
+                yield f"data:{{\"event\": \"game_start\", \"image_index\": {targetImageIndex}}}\n\n"
+            
+            elif isCountDownStart:
+                print("Countdown start time", current_seconds)
+                if current_seconds <= 3 :
+                    yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - current_seconds}}}\n\n"
+                elif current_seconds > 3:
+                    isCountDownStart = False
+                    current_seconds = 0
+            
+            elif isDrawingStart:
+                print("Drawing time", current_seconds)
+                if current_seconds <= 20:
+                    yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - current_seconds}}}\n\n"
+                else:
+                    isDrawingStart = False
+                    current_seconds = 0
+            elif isCountDownEnd:
+                print("Countdown end", current_seconds)
+                if current_seconds <= 3:
+                    yield f"data:{{\"event\": \"countdown_end\"}}\n\n"
+                elif current_seconds > 3:
+                    isCountDownEnd = False
+                    current_seconds = 0
+                    
+            time.sleep(0.01)
             
     return Response(event_stream(), content_type='text/event-stream')
-
-@app.route('/set_image_index', methods=['POST'])
-def set_image_index():
-    global targetImageIndex
-    data = request.get_json()  # Get the incoming JSON data
-    image_index = data.get('imageIndex')  # Extract the image index
-    targetImageIndex = image_index
-
-    # Do something with the image index (e.g., store it or process it)
-    print(f"Received image index: {image_index}")
-
-    # Respond back to the client
-    return jsonify({"status": "success", "imageIndex": image_index})
 
 if __name__ == '__main__':
     app.run()
