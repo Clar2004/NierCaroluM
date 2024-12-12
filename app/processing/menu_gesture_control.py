@@ -4,6 +4,8 @@ from flask import Flask, Response, render_template
 import os
 import pygame
 import time
+from state import *
+
 
 # Initialize Flask
 app = Flask(__name__)
@@ -188,6 +190,8 @@ def detect_gestures_and_stream(cap_camera):
             if is_cursor_hovering(cursor_x, cursor_y, text_x, text_y, text_size[0], text_size[1]) and last_emitted['gesture'] == 'click':
                 if current_time - last_click_time >= 2:  # If 5 seconds have passed
                     print("Play Demo clicked!")
+                    from state import game_state
+                    game_state._is_play_demo = True
                     from app import play_demo
                     play_demo()
                     last_click_time = current_time  # Update the last click time

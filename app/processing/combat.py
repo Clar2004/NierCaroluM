@@ -95,8 +95,8 @@ health_bar_x = 50  # X-position of the health bar
 health_bar_y = 50  # Y-position of the health bar
 
 # Maximum health value for the boss
-max_health = 100
-boss_health = 100
+max_health = 1000
+boss_health = 1000
 
 #load the circle image
 red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_UNCHANGED) 
@@ -1105,16 +1105,16 @@ def scroll_background(camera, isReset):
         from app import change_game_one_state, is_game_one_done, change_game_two_state, is_game_two_done
         from app import change_game_three_state, is_game_three_done, is_game_four_done, change_game_four_state
         
-        # if boss_health <= max_health*0.8 and is_game_one_done == False:
-        #     change_game_one_state()
-        #     print("Redirect to Game 1")
-        # elif boss_health <= max_health*0.6 and is_game_two_done == False:
-        #     change_game_two_state()
-        #     print("Redirect to Game 2")
-        # if boss_health <= max_health*0.4 and is_game_three_done == False:
-        #     change_game_three_state()
-        #     print("Redirect to Game 3")
-        if boss_health <= max_health*0.9 and is_game_four_done == False:
+        if boss_health <= max_health*0.8 and is_game_one_done == False:
+            change_game_one_state()
+            print("Redirect to Game 1")
+        elif boss_health <= max_health*0.6 and is_game_two_done == False:
+            change_game_two_state()
+            print("Redirect to Game 2")
+        if boss_health <= max_health*0.4 and is_game_three_done == False:
+            change_game_three_state()
+            print("Redirect to Game 3")
+        if boss_health <= max_health*0.2 and is_game_four_done == False:
             change_game_four_state()
             print("Redirect to Game 4")
         

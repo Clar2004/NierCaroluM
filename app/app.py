@@ -12,13 +12,12 @@ from processing.threshold_processing import (
     initialize_threshold_image,
     generate_threshold_frames,
 )
-from threading import Lock
 from processing.edge_corner_processing import generate_maze_interaction_frames
 from processing.combat import scroll_background
-import processing.state as state
 import time
 from processing.image_matching import game_loop
 from processing.menu_gesture_control import detect_gestures_and_stream
+from processing.state import *
 
 app = Flask(__name__)
 app.config['DEBUG'] = True 
@@ -28,7 +27,7 @@ CORS(app)
 
 camera = cv2.VideoCapture(1)
 
-isPlayDemo = False
+
 
 @app.route('/')
 def menu():
@@ -163,33 +162,31 @@ def edge_corner_feed():
         )
         
 ## Combat routes ##
-isReset = False
 @app.route('/combat')
 def combat_page():
-    global isReset, is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done
-    global is_game_three_done, is_mini_game_three_done, is_game_four_done, is_mini_game_four_done
-    global is_cheat, is_update
+    
+    from processing.state import game_state
     
     reset_game = request.args.get('reset', 'false') == 'true'
     
     if reset_game:
-        isReset = True
-        is_game_one_done = False
-        is_mini_game_one_done = False
-        is_game_two_done = False
-        is_mini_game_two_done = False
-        is_game_three_done = False
-        is_mini_game_three_done = False
-        is_game_four_done = False
-        is_mini_game_four_done = False
+        game_state.isReset = True
+        game_state.is_game_one_done = False
+        game_state.is_mini_game_one_done = False
+        game_state.is_game_two_done = False
+        game_state.is_mini_game_two_done = False
+        game_state.is_game_three_done = False
+        game_state.is_mini_game_three_done = False
+        game_state.is_game_four_done = False
+        game_state.is_mini_game_four_done = False
         
     return render_template('combat.html')
 
 @app.route('/combat_feed')
 def combat_feed():
-    global isReset
+    from processing.state import game_state
     
-    print("Current reset state:", isReset)
+    print("Current reset state:", game_state.isReset)
     
     # Check if the camera is opened
     if not camera.isOpened():
@@ -202,8 +199,8 @@ def combat_feed():
             )
 
     # Generate and stream frames with the scrolling background
-    if isReset:
-        isReset = False
+    if game_state.isReset:
+        game_state.isReset = False
         try:
             return Response(
                 scroll_background(camera, isReset=True),
@@ -228,7 +225,8 @@ def combat_feed():
                 status=500,  # Internal Server Error
             )
             
-is_game_one_done = False
+# isReset = False [v]
+# is_game_one_done = False [v]
 is_mini_game_one_done = False
 is_game_two_done = False
 is_mini_game_two_done = False
@@ -240,10 +238,6 @@ is_cheat = False
 is_update = False
 current_health = 3
 isDead = False
-
-def play_demo():
-    global isPlayDemo
-    isPlayDemo = True
 
 def player_dead():
     global isDead
@@ -261,22 +255,22 @@ def update_health(hp):
     is_update = True
     
 def change_game_one_state():
-    global is_game_one_done
+    from processing.state import game_state
     is_game_one_done = True  
     print("Game one is done!")
 
 def change_game_two_state():
-    global is_game_two_done
+    from processing.state import game_state
     is_game_two_done = True  
     print("Game two is done!")
     
 def change_game_three_state():
-    global is_game_three_done
+    from processing.state import game_state
     is_game_three_done = True  
     print("Game three is done!") 
 
 def change_game_four_state():
-    global is_game_four_done
+    from processing.state import game_state
     is_game_four_done = True  
     print("Game four is done!")
     
@@ -340,7 +334,7 @@ def change_mini_game_three_state():
 @app.route('/sse_game_status')
 def sse_game_status():
     def event_stream():
-        global is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done, isDead, isReset
+        global is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done, isDead
         while True:
             # Memeriksa apakah game sudah selesai
             if is_game_one_done and not is_mini_game_one_done:
@@ -419,59 +413,65 @@ def sse_mini_game_three():
                 
     return Response(event_stream(), content_type='text/event-stream')
 
-@app.route('/sse_menu')
+
+
+def play_demo():
+    from processing.state import game_state
+    game_state.isPlayDemo = True
+    print(f"Current game state: {game_state.isPlayDemo}")
+    
+@app.route('/sse_menu')    
 def sse_menu():
-    def event_stream():
-        global isPlayDemo
-        while True:
-            # Memeriksa apakah game sudah selesai
-            if isPlayDemo:
-                isPlayDemo = False
-                yield f"data: redirect\n\n"
+    def event_stream():        
+        from processing.state import game_state
+        while game_state.isPlayDemo == False:
+            yield f"data: dasdas\n\n"
             time.sleep(1)
+        game_state.isPlayDemo == False
+        yield f"data: redirect\n\n"
+        sys.stdout.flush()
+                
 
     return Response(event_stream(), content_type='text/event-stream')
 
-## Image matching routes ##
-isGameStart = False
-isCountDownStart = False
-isDrawingStart = False
-isCountDownEnd = False
-isTriggered = False
-targetImageIndex = None
-isSendAccuracy = False
-match_accuracy = None
 
-targetImageIndex = None
-current_seconds = 0
+## Image matching routes ##
+# isGameStart = False [v]
+# isCountDownStart = False [v]
+# isDrawingStart = False [v]
+# isCountDownEnd = False [v]
+# targetImageIndex = None [v]
+# isSendAccuracy = False [v]
+# match_accuracy = None [v]
+# current_seconds = 0 [v]
 
 def match_start(num):
-    global isGameStart, targetImageIndex
-    isGameStart = True
-    targetImageIndex = num
+    from processing.state import game_state
+    game_state.isGameStart = True
+    game_state.targetImageIndex = num
 
 def count_down_start(seconds):
-    global isCountDownStart, current_seconds
-    isCountDownStart = True
-    current_seconds = seconds
+    from processing.state import game_state
+    game_state.isCountDownStart = True
+    game_state.current_seconds = seconds
 
 def drawing_start(seconds):
-    global isDrawingStart, current_seconds
-    isDrawingStart = True
-    current_seconds = seconds
+    from processing.state import game_state
+    game_state.isDrawingStart = True
+    game_state.current_seconds = seconds
 
 def count_down_end(seconds):
-    global isCountDownEnd, current_seconds
-    isCountDownEnd = True
-    current_seconds = seconds
+    from processing.state import game_state
+    game_state.isCountDownEnd = True
+    game_state.current_seconds = seconds
     
 def send_accuracy():
-    global isSendAccuracy
-    isSendAccuracy = True
+    from processing.state import game_state
+    game_state.isSendAccuracy = True
     
 def set_match_accuracy(accuracy):
-    global match_accuracy
-    match_accuracy = accuracy
+    from processing.state import game_state
+    game_state.match_accuracy = accuracy
 
 @app.route('/image_match')
 def image_match_page():
@@ -507,8 +507,6 @@ def matches_video_feed():
 def sse_mini_game_four():
     def event_stream():
         global is_game_four_done, is_mini_game_four_done
-        global isGameStart, isCountDownStart, isDrawingStart, isCountDownEnd, isTriggered
-        global isSendAccuracy, targetImageIndex, match_accuracy
         
         while True:
             if is_mini_game_four_done:
@@ -519,21 +517,6 @@ def sse_mini_game_four():
                 yield f"data: redirect\n\n"
                 break
             
-            # elif isGameStart:
-            #     isGameStart = False
-            #     yield f"data: game_start\n\n"
-            # elif isCountDownStart and not isTriggered:
-            #     isCountDownStart = False
-            #     isTriggered = True
-            #     yield f"data: countdown_start\n\n"
-            # elif isDrawingStart:
-            #     isDrawingStart = False
-            #     yield f"data: drawing_start\n\n"
-            # elif isCountDownEnd:
-            #     isCountDownEnd = False
-            #     isTriggered = False
-            #     yield f"data: countdown_end\n\n"
-            
             yield "data: heartbeat\n\n" 
             time.sleep(1)
             
@@ -542,47 +525,64 @@ def sse_mini_game_four():
 @app.route('/sse_mini_game_four_accuracy')
 def sse_mini_game_four_accuracy():
     def event_stream():
-        global isSendAccuracy, targetImageIndex, match_accuracy
-        global isGameStart, isCountDownStart, current_seconds, isTriggered
-        global isDrawingStart, isCountDownEnd
+        from processing.state import game_state
                 
         while True:
-            if isSendAccuracy:
-                isSendAccuracy = False
-                print("Sending accuracy:", match_accuracy)
-                yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {match_accuracy}}}\n\n"
+            if game_state.isSendAccuracy:
+                game_state.isSendAccuracy = False
+                print("Sending accuracy:", game_state.match_accuracy)
+                yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {game_state.match_accuracy}}}\n\n"
             
-            elif isGameStart:
-                isGameStart = False
-                print("Sending image index:", targetImageIndex)
-                yield f"data:{{\"event\": \"game_start\", \"image_index\": {targetImageIndex}}}\n\n"
+            elif game_state.isGameStart:
+                game_state.isGameStart = False
+                print("Sending image index:", game_state.targetImageIndex)
+                yield f"data:{{\"event\": \"game_start\", \"image_index\": {game_state.targetImageIndex}}}\n\n"
             
-            elif isCountDownStart:
-                print("Countdown start time", current_seconds)
-                if current_seconds <= 3 :
-                    yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - current_seconds}}}\n\n"
-                elif current_seconds > 3:
-                    isCountDownStart = False
-                    current_seconds = 0
+            elif game_state.isCountDownStart:
+                print("Countdown start time", game_state.current_seconds)
+                if game_state.current_seconds <= 3 :
+                    yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - game_state.current_seconds}}}\n\n"
+                elif game_state.current_seconds > 3:
+                    game_state.isCountDownStart = False
+                    game_state.current_seconds = 0
             
-            elif isDrawingStart:
-                print("Drawing time", current_seconds)
-                if current_seconds <= 20:
-                    yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - current_seconds}}}\n\n"
+            elif game_state.isDrawingStart:
+                print("Drawing time", game_state.current_seconds)
+                if game_state.current_seconds <= 20:
+                    yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - game_state.current_seconds}}}\n\n"
                 else:
-                    isDrawingStart = False
-                    current_seconds = 0
-            elif isCountDownEnd:
-                print("Countdown end", current_seconds)
-                if current_seconds <= 3:
+                    game_state.isDrawingStart = False
+                    game_state.current_seconds = 0
+            elif game_state.isCountDownEnd:
+                print("Countdown end", game_state.current_seconds)
+                if game_state.current_seconds <= 3:
                     yield f"data:{{\"event\": \"countdown_end\"}}\n\n"
-                elif current_seconds > 3:
-                    isCountDownEnd = False
-                    current_seconds = 0
+                elif game_state.current_seconds > 3:
+                    game_state.isCountDownEnd = False
+                    game_state.current_seconds = 0
                     
             time.sleep(0.01)
             
     return Response(event_stream(), content_type='text/event-stream')
 
-if __name__ == '__main__':
-    app.run()
+def run_flask():
+    serve(app, host="127.0.0.1", port=5000)
+        
+import webview
+from waitress import serve
+
+if __name__ == "__main__":
+    serve(app, host="127.0.0.1", port=5000)
+    
+    # from threading import Thread
+    
+    
+
+    # flask_thread = Thread(target=run_flask)
+    # flask_thread.start()
+
+    # window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
+
+    # webview.start()
+
+    # flask_thread.join()

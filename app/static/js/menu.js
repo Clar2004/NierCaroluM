@@ -9,12 +9,13 @@ sse.onmessage = function (event) {
 
       setTimeout(() => {
          window.location.href = "/combat?reset=true";
+         sse.close();
       }, 2000);
    }
 };
 
 sse.onerror = function () {
-   console.error("SSE connection failed");
+   console.log("SSE connection failed");
    sse.close();
 };
 
@@ -23,7 +24,7 @@ const sse2 = new EventSource('/sse_game_status');
 sse2.onmessage = function (event) {
    console.log("Status:", event.data);
    if (event.data === "dead") {
-      sse.close();
+      sse2.close();
       location.reload();
    }
 };
