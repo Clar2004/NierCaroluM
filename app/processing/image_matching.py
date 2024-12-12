@@ -12,7 +12,6 @@ mp_drawing = mp.solutions.drawing_utils
 
 images = [
    "static/assets/image_matching/circle.jpg",
-   "static/assets/image_matching/rhombus.jpg",
    "static/assets/image_matching/square.jpg"
 ]
 
@@ -184,7 +183,7 @@ def game_loop(cap):
                         if current_time - last_thumbs_up_detection_time >= 2:  # If 2 seconds have passed
                             if not game_started and waiting_for_thumbs_up:
                                 # Random number between 0 to 2
-                                random_number = random.randint(0, 2)
+                                random_number = random.randint(0, 1)
                                 
                                 print("Random number: ", random_number)
                                 

@@ -303,7 +303,7 @@ def generate_maze_interaction_frames(camera):
                         if game_started:
                             if not cheat_mode_activated:
                                 # Check if the current line segment intersects with the CPU
-                                line_points = np.linspace((x1, y1), (x2, y2), num=10).astype(int)
+                                line_points = np.linspace((x1, y1), (x2, y2), num=20).astype(int)
                                 collision_detected = False
                                 for px, py in line_points:
                                     # Check if the point is within the CPU detection zone

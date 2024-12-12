@@ -239,7 +239,8 @@ def combat_feed():
 
 def player_dead():
     from processing.state import game_state
-    game_state.isDead = True
+    game_state.is_dead = True
+    game_state.isPlayDemo = False
     print("Player is dead!")
 
 def show_cheat():
@@ -334,10 +335,9 @@ def sse_game_status():
     def event_stream():
         from processing.state import game_state
         while True:
-            # Memeriksa apakah game sudah selesai
             if game_state.is_game_one_done and not game_state.is_mini_game_one_done:
                 yield f"data: game_one\n\n"
-                break  # Menghentikan stream jika game selesai
+                break 
             elif game_state.is_game_two_done and not game_state.is_mini_game_two_done:
                 yield f"data: game_two\n\n"
                 break
@@ -347,8 +347,8 @@ def sse_game_status():
             elif game_state.is_game_four_done and not game_state.is_mini_game_four_done:
                 yield f"data: game_four\n\n"
                 break
-            elif game_state.isDead:
-                game_state.isDead = False
+            elif game_state.is_dead:
+                game_state.is_dead = False
                 yield f"data: dead\n\n"
                 break
             
@@ -567,17 +567,16 @@ import webview
 from waitress import serve
 
 if __name__ == "__main__":
-    serve(app, host="127.0.0.1", port=5000)
+    from threading import Thread
     
-    # from threading import Thread
-    
-    
+    def run_flask():
+        app.run(debug=False, port=5000, use_reloader=False)
 
-    # flask_thread = Thread(target=run_flask)
-    # flask_thread.start()
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
 
-    # window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
+    window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
 
-    # webview.start()
+    webview.start()
 
-    # flask_thread.join()
+    flask_thread.join()
