@@ -43,14 +43,11 @@ body {
 
 .prompt {
    color: #0dbf0d;
-   /* Green terminal prompt color */
 }
 
 #message-input {
    background-color: transparent;
-   /* Dark input background */
    color: #ffffff;
-   /* White text */
    font-family: 'Courier New', Courier, monospace;
    border: none;
    outline: none;
@@ -60,10 +57,8 @@ body {
    text-align: left;
 }
 
-/* Game Container Section */
 .game-container {
    flex: 2;
-   /* Allow it to take more space compared to terminal */
    text-align: center;
    display: flex;
    flex-direction: column;
@@ -74,7 +69,6 @@ body {
    border: 5px solid #555;
    border-radius: 10px;
    max-width: 800px;
-   /* Set a maximum width for the video feed */
    width: 100%;
    height: auto;
    margin-top: 8px;

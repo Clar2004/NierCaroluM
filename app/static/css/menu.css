@@ -3,8 +3,6 @@ html {
    margin: 0;
    padding: 0;
    height: 100%;
-   /* overflow: hidden !important; */
-   /* Prevent scrolling */
    cursor: none;
 }
 
@@ -55,7 +53,6 @@ html {
 
 .loader::before {
    border-color: #f03355 #0000;
-   /* Inner loader color */
    animation: inherit;
    animation-duration: .5s;
    animation-direction: reverse;

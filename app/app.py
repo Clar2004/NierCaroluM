@@ -34,17 +34,15 @@ def menu():
 @app.route('/menu_video_feed')
 def menu_feed():
     
-    # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503,  
             )
 
-    # Generate and stream frames
     try:
         return Response(
             detect_gestures_and_stream(camera),
@@ -54,10 +52,9 @@ def menu_feed():
         print(f"Error during frame generation: {e}")
         return Response(
             "An error occurred while streaming frames.",
-            status=500,  # Internal Server Error
+            status=500, 
         )
 
-## Image Filter Routes ##
 initialize_base_image("static/assets/images/Image_Filter_Asset.png", blur_strength=51) 
 
 @app.route('/image_filter')
@@ -66,18 +63,15 @@ def image_filter_page():
 
 @app.route('/video_feed')
 def video_feed():
-
-    # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503, 
             )
 
-    # Generate and stream frames
     try:
         return Response(
             generate_frames(camera),
@@ -87,34 +81,30 @@ def video_feed():
         print(f"Error during frame generation: {e}")
         return Response(
             "An error occurred while streaming frames.",
-            status=500,  # Internal Server Error
+            status=500,  
         )
 
 ##  Threshold Processing Routes ##
 image_path = "static/assets/images/Threshold.png"
 initialize_threshold_image(image_path)
 
-# Route for Threshold Puzzle
 @app.route("/threshold")
 def threshold_page():
     return render_template("threshold.html")
 
 
-# Route for streaming thresholded video feed
 @app.route("/threshold_feed")
 def threshold_feed():
 
-    # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503, 
             )
 
-    # Generate and stream frames
     try:
         return Response(
             generate_threshold_frames(camera),
@@ -124,7 +114,7 @@ def threshold_feed():
         print(f"Error during frame generation: {e}")
         return Response(
             "An error occurred while streaming frames.",
-            status=500,  # Internal Server Error
+            status=500, 
         )
 
 ## Edge corner processing routes ##
@@ -134,19 +124,15 @@ def edge_corner_page():
 
 @app.route('/maze_game_feed')
 def edge_corner_feed():
-    # global camera
-
-    # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503,
             )
 
-    # Generate and stream frames
     try:
         return Response(
             generate_maze_interaction_frames(camera),
@@ -156,7 +142,7 @@ def edge_corner_feed():
         print(f"Error during frame generation: {e}")
         return Response(
             "An error occurred while streaming frames.",
-            status=500,  # Internal Server Error
+            status=500,  
         )
         
 ## Combat routes ##
@@ -185,18 +171,16 @@ def combat_feed():
     from processing.state import game_state
     
     print("Current reset state:", game_state.isReset)
-    
-    # Check if the camera is opened
+
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503,  
             )
 
-    # Generate and stream frames with the scrolling background
     if game_state.isReset:
         game_state.isReset = False
         try:
@@ -208,7 +192,7 @@ def combat_feed():
             print(f"Error during frame generation: {e}")
             return Response(
                 "An error occurred while streaming frames.",
-                status=500,  # Internal Server Error
+                status=500, 
             )
     else:
         try:
@@ -220,22 +204,8 @@ def combat_feed():
             print(f"Error during frame generation: {e}")
             return Response(
                 "An error occurred while streaming frames.",
-                status=500,  # Internal Server Error
+                status=500, 
             )
-            
-# isReset = False [v]
-# is_game_one_done = False [v]
-# is_mini_game_one_done = False
-# is_game_two_done = False
-# is_mini_game_two_done = False
-# is_game_three_done = False
-# is_mini_game_three_done = False
-# is_game_four_done = False
-# is_mini_game_four_done = False
-# is_cheat = False
-# is_update = False
-# current_health = 3
-# isDead = False
 
 def player_dead():
     from processing.state import game_state
@@ -283,7 +253,7 @@ def change_mini_game_one_state():
         if message != "NAR25-1 Semangat Jangan Merasa Aman":
             return jsonify({"message": "Invalid message"}), 400
         from processing.state import game_state
-        game_state.is_mini_game_one_done = True #minigamenya uda kelar
+        game_state.is_mini_game_one_done = True 
             
         print("Mini game one is done!")
         return jsonify({"message": "Mini game one is done!"}),200
@@ -300,7 +270,7 @@ def change_mini_game_two_state():
         if message != "For The Glory Of Mankind":
             return jsonify({"message": "Invalid message"}), 400
         from processing.state import game_state
-        game_state.is_mini_game_two_done = True #minigamenya uda kelar
+        game_state.is_mini_game_two_done = True 
             
         print("Mini game one is done!")
         return jsonify({"message": "Mini game two is done!"}),200
@@ -361,10 +331,9 @@ def sse_mini_game_one():
     def event_stream():
         from processing.state import game_state
         while True:
-            # Memeriksa apakah game sudah selesai
             if game_state.is_game_one_done and game_state.is_mini_game_one_done:
                 yield f"data: redirect\n\n"
-                break  # Menghentikan stream jika game selesai
+                break  
             time.sleep(1)
 
     return Response(event_stream(), content_type='text/event-stream')
@@ -374,10 +343,9 @@ def sse_mini_game_two():
     def event_stream():
         from processing.state import game_state
         while True:
-            # Memeriksa apakah game sudah selesai
             if game_state.is_game_two_done and game_state.is_mini_game_two_done:
                 yield f"data: redirect\n\n"
-                break  # Menghentikan stream jika game selesai
+                break  
             time.sleep(1)
 
     return Response(event_stream(), content_type='text/event-stream')
@@ -431,19 +399,11 @@ def sse_menu():
 
 
 ## Image matching routes ##
-# isGameStart = False [v]
-# isCountDownStart = False [v]
-# isDrawingStart = False [v]
-# isCountDownEnd = False [v]
-# targetImageIndex = None [v]
-# isSendAccuracy = False [v]
-# match_accuracy = None [v]
-# current_seconds = 0 [v]
-
 def match_start(num):
     from processing.state import game_state
     game_state.targetImageIndex = num
     game_state.isGameStart = True
+    print("Game start with image index:", num)
 
 def count_down_start(seconds):
     from processing.state import game_state
@@ -475,17 +435,15 @@ def image_match_page():
 @app.route('/match_video_feed')
 def matches_video_feed():
 
-    # Check if the camera is opened
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
             print("Error: Camera not opened or unavailable.")
             return Response(
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
-                status=503,  # 503 Service Unavailable
+                status=503, 
             )
 
-    # Generate and stream frames
     try:
         return Response(
             game_loop(camera),
@@ -495,7 +453,7 @@ def matches_video_feed():
         print(f"Error during frame generation: {e}")
         return Response(
             "An error occurred while streaming frames.",
-            status=500,  # Internal Server Error
+            status=500, 
         )
         
 @app.route('/sse_mini_game_four')
@@ -503,16 +461,11 @@ def sse_mini_game_four():
     def event_stream():
         from processing.state import game_state
         
-        while True:
-            if game_state.is_mini_game_four_done:
-                print("is mini game four true", game_state.is_mini_game_four_done)
-            
-            # Memeriksa apakah game sudah selesai
+        while True: 
             if game_state.is_game_four_done and game_state.is_mini_game_four_done:
                 yield f"data: redirect\n\n"
                 break
             
-            yield "data: heartbeat\n\n" 
             time.sleep(1)
             
     return Response(event_stream(), content_type='text/event-stream')
@@ -521,42 +474,52 @@ def sse_mini_game_four():
 def sse_mini_game_four_accuracy():
     def event_stream():
         from processing.state import game_state
+        last_update_time = time.time()
+        last_update_time2 = time.time()
                 
         while True:
+            current_time = time.time()
+            current_time2 = time.time()
+            
+            if current_time2 - last_update_time2 > 1:  # Send every 15 seconds
+                yield "data: {}\n\n"
+                last_update_time2 = current_time2
+            
             if game_state.isSendAccuracy:
                 game_state.isSendAccuracy = False
                 print("Sending accuracy:", game_state.match_accuracy)
                 yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {game_state.match_accuracy}}}\n\n"
-            
-            elif game_state.isGameStart:
+                
+            if game_state.isGameStart and (current_time - last_update_time > 0.05):
                 game_state.isGameStart = False
+                last_update_time = current_time
                 print("Sending image index:", game_state.targetImageIndex)
                 yield f"data:{{\"event\": \"game_start\", \"image_index\": {game_state.targetImageIndex}}}\n\n"
             
-            elif game_state.isCountDownStart:
-                print("Countdown start time", game_state.current_seconds)
+            if game_state.isCountDownStart:
+                # print("Countdown start time", game_state.current_seconds)
                 if game_state.current_seconds <= 3 :
                     yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - game_state.current_seconds}}}\n\n"
                 elif game_state.current_seconds > 3:
                     game_state.isCountDownStart = False
                     game_state.current_seconds = 0
             
-            elif game_state.isDrawingStart:
-                print("Drawing time", game_state.current_seconds)
+            if game_state.isDrawingStart:
+                # print("Drawing time", game_state.current_seconds)
                 if game_state.current_seconds <= 20:
                     yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - game_state.current_seconds}}}\n\n"
                 else:
                     game_state.isDrawingStart = False
                     game_state.current_seconds = 0
-            elif game_state.isCountDownEnd:
-                print("Countdown end", game_state.current_seconds)
+            if game_state.isCountDownEnd:
+                # print("Countdown end", game_state.current_seconds)
                 if game_state.current_seconds <= 3:
                     yield f"data:{{\"event\": \"countdown_end\"}}\n\n"
                 elif game_state.current_seconds > 3:
                     game_state.isCountDownEnd = False
                     game_state.current_seconds = 0
-                    
-            time.sleep(0.01)
+            
+            time.sleep(0.05) 
             
     return Response(event_stream(), content_type='text/event-stream')
 
@@ -567,16 +530,18 @@ import webview
 from waitress import serve
 
 if __name__ == "__main__":
-    from threading import Thread
+    serve(app, host="127.0.0.1", port=5000, threads=8)
     
-    def run_flask():
-        app.run(debug=False, port=5000, use_reloader=False)
+    # from threading import Thread
+    
+    # def run_flask():
+    #     app.run(debug=False, port=5000, use_reloader=False)
 
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
+    # flask_thread = Thread(target=run_flask)
+    # flask_thread.start()
 
-    window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
+    # window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
 
-    webview.start()
+    # webview.start()
 
-    flask_thread.join()
+    # flask_thread.join()

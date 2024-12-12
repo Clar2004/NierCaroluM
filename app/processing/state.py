@@ -7,7 +7,7 @@ class GameState:
         self.isCountDownStart = False
         self.isDrawingStart = False
         self.isCountDownEnd = False
-        self.targetImageIndex = None
+        self.targetImageIndex = 0
         self.isSendAccuracy = False
         self.match_accuracy = None
         self.current_seconds = 0

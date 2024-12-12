@@ -31,7 +31,6 @@
 
 .loader::before {
    border-color: #f03355 #0000;
-   /* Inner loader color */
    animation: inherit;
    animation-duration: .5s;
    animation-direction: reverse;

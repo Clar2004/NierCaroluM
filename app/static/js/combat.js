@@ -27,7 +27,7 @@ sse.onmessage = function (event) {
 
 sse.onerror = function () {
    console.error("SSE connection failed");
-   sse.close(); // Close SSE connection on error
+   sse.close();
 };
 
 window.onload = function () {
@@ -40,7 +40,6 @@ function showVideoOverlayAndNavigate(url) {
    const video = document.getElementById("transition-video");
    const audio = document.getElementById("transition-sound");
 
-   // Show the overlay and start the video
    overlay.style.display = "flex";
    video.play();
    audio.play();
@@ -48,12 +47,11 @@ function showVideoOverlayAndNavigate(url) {
    video.style.opacity = 0.5;
    audio.volume = 0.3;
 
-   // Hide the overlay after 3 seconds (video should play for 3 seconds)
    setTimeout(function () {
-      audio.pause(); // Stop the audio
+      audio.pause(); 
       audio.currentTime = 0;
       window.location.href = url;
-   }, 2000); // Wait for 3 seconds before redirecting
+   }, 2000);
 }
 
 function showVideoOverlayAndNavigate2(url) {
@@ -68,7 +66,6 @@ function showVideoOverlayAndNavigate2(url) {
 
    audio.volume = 0.3;
 
-   // Hide the overlay after 5 seconds (video should play for 5 seconds)
    setTimeout(function () {
       audio.pause(); 
       audio.currentTime = 0;

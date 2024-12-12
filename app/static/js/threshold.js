@@ -16,14 +16,13 @@ function addTerminalLine(text, isError = false) {
    message.textContent = text;
 
    if (isError) {
-      message.style.color = "red"; // Red text for incorrect inputs
+      message.style.color = "red";
    }
 
    line.appendChild(prompt);
    line.appendChild(message);
    terminal.insertBefore(line, document.getElementById("current-prompt"));
 
-   // Scroll terminal to the bottom
    terminal.scrollTop = terminal.scrollHeight;
 }
 
@@ -32,7 +31,7 @@ function handleKeyPress(event) {
       const input = inputField.value.trim();
 
       if (!input) {
-         addTerminalLine("", true); // Add empty prompt line for empty input
+         addTerminalLine("", true);
          return;
       }
 
@@ -60,7 +59,7 @@ function handleKeyPress(event) {
             console.error("Error:", error);
          });
 
-      inputField.value = ""; // Clear the input field
+      inputField.value = ""; 
    }
 }
 
@@ -81,5 +80,5 @@ sse.onmessage = function (event) {
 
 sse.onerror = function () {
    console.error("SSE connection failed");
-   sse.close(); // Close SSE connection on error
-};
+   sse.close();
+}

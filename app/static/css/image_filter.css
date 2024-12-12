@@ -28,11 +28,9 @@ body {
 
 #video {
    border: 2px solid #071707;
-   /* Green border */
    border-radius: 10px;
    max-width: 100%;
    width: 800px;
-   /* Set a maximum width for the video feed */
    height: auto;
    margin-top: 8px;
 }
@@ -41,7 +39,6 @@ body {
    flex: 1;
    max-width: 35%;
    background-color: #202020;
-   /* Darker terminal-like background */
    padding: 20px;
    border-radius: 10px;
    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -66,14 +63,11 @@ body {
 
 .prompt {
    color: #0dbf0d;
-   /* Green terminal prompt color */
 }
 
 #message-input {
    background-color: transparent;
-   /* Dark input background */
    color: #ffffff;
-   /* Green text */
    font-family: 'Courier New', Courier, monospace;
    border: none;
    outline: none;
