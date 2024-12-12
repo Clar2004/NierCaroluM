@@ -23,4 +23,9 @@ class GameState:
         self.is_game_four_done = False
         self.is_mini_game_four_done = False
         
+        self.is_cheat = False
+        self.is_update = False
+        self.is_dead = False
+        self.current_health = 3
+        
 game_state = GameState()

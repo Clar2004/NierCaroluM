@@ -27,8 +27,6 @@ CORS(app)
 
 camera = cv2.VideoCapture(1)
 
-
-
 @app.route('/')
 def menu():
     return render_template('menu.html')
@@ -227,51 +225,51 @@ def combat_feed():
             
 # isReset = False [v]
 # is_game_one_done = False [v]
-is_mini_game_one_done = False
-is_game_two_done = False
-is_mini_game_two_done = False
-is_game_three_done = False
-is_mini_game_three_done = False
-is_game_four_done = False
-is_mini_game_four_done = False
-is_cheat = False
-is_update = False
-current_health = 3
-isDead = False
+# is_mini_game_one_done = False
+# is_game_two_done = False
+# is_mini_game_two_done = False
+# is_game_three_done = False
+# is_mini_game_three_done = False
+# is_game_four_done = False
+# is_mini_game_four_done = False
+# is_cheat = False
+# is_update = False
+# current_health = 3
+# isDead = False
 
 def player_dead():
-    global isDead
-    isDead = True
+    from processing.state import game_state
+    game_state.isDead = True
     print("Player is dead!")
 
 def show_cheat():
-    global is_cheat
-    is_cheat = True
+    from processing.state import game_state
+    game_state.is_cheat = True
     print("Cheat activated!")
     
 def update_health(hp):
-    global current_health, is_update
-    current_health = hp
-    is_update = True
+    from processing.state import game_state
+    game_state.current_health = hp
+    game_state.is_update = True
     
 def change_game_one_state():
     from processing.state import game_state
-    is_game_one_done = True  
+    game_state.is_game_one_done = True  
     print("Game one is done!")
 
 def change_game_two_state():
     from processing.state import game_state
-    is_game_two_done = True  
+    game_state.is_game_two_done = True  
     print("Game two is done!")
     
 def change_game_three_state():
     from processing.state import game_state
-    is_game_three_done = True  
+    game_state.is_game_three_done = True  
     print("Game three is done!") 
 
 def change_game_four_state():
     from processing.state import game_state
-    is_game_four_done = True  
+    game_state.is_game_four_done = True  
     print("Game four is done!")
     
 @app.route('/game_one', methods=['POST'])
@@ -283,8 +281,8 @@ def change_mini_game_one_state():
         print(message)
         if message != "NAR25-1 Semangat Jangan Merasa Aman":
             return jsonify({"message": "Invalid message"}), 400
-        global is_mini_game_one_done
-        is_mini_game_one_done = True #minigamenya uda kelar
+        from processing.state import game_state
+        game_state.is_mini_game_one_done = True #minigamenya uda kelar
             
         print("Mini game one is done!")
         return jsonify({"message": "Mini game one is done!"}),200
@@ -300,8 +298,8 @@ def change_mini_game_two_state():
         print(message)
         if message != "For The Glory Of Mankind":
             return jsonify({"message": "Invalid message"}), 400
-        global is_mini_game_two_done
-        is_mini_game_two_done = True #minigamenya uda kelar
+        from processing.state import game_state
+        game_state.is_mini_game_two_done = True #minigamenya uda kelar
             
         print("Mini game one is done!")
         return jsonify({"message": "Mini game two is done!"}),200
@@ -310,7 +308,7 @@ def change_mini_game_two_state():
     
 @app.route('/game_four', methods=['POST'])
 def change_mini_game_four_state():
-    global is_mini_game_four_done, is_game_four_done
+    from processing.state import game_state
     data = request.get_json() 
     if data :
         
@@ -318,8 +316,8 @@ def change_mini_game_four_state():
         print(message)
         if message != "Success":
             return jsonify({"message": "Invalid message"}), 400
-        is_mini_game_four_done = True
-        is_game_four_done = True
+        game_state.is_mini_game_four_done = True
+        game_state.is_game_four_done = True
             
         print("Mini game four is done!")
         return jsonify({"message": "Mini game two is done!"}),200
@@ -327,30 +325,30 @@ def change_mini_game_four_state():
         return jsonify({"message": "No message provided"}), 400
     
 def change_mini_game_three_state():
-    global is_mini_game_three_done
-    is_mini_game_three_done = True
+    from processing.state import game_state
+    game_state.is_mini_game_three_done = True
 
 # SSE route
 @app.route('/sse_game_status')
 def sse_game_status():
     def event_stream():
-        global is_game_one_done, is_mini_game_one_done, is_game_two_done, is_mini_game_two_done, isDead
+        from processing.state import game_state
         while True:
             # Memeriksa apakah game sudah selesai
-            if is_game_one_done and not is_mini_game_one_done:
+            if game_state.is_game_one_done and not game_state.is_mini_game_one_done:
                 yield f"data: game_one\n\n"
                 break  # Menghentikan stream jika game selesai
-            elif is_game_two_done and not is_mini_game_two_done:
+            elif game_state.is_game_two_done and not game_state.is_mini_game_two_done:
                 yield f"data: game_two\n\n"
                 break
-            elif is_game_three_done and not is_mini_game_three_done:
+            elif game_state.is_game_three_done and not game_state.is_mini_game_three_done:
                 yield f"data: game_three\n\n"
                 break
-            elif is_game_four_done and not is_mini_game_four_done:
+            elif game_state.is_game_four_done and not game_state.is_mini_game_four_done:
                 yield f"data: game_four\n\n"
                 break
-            elif isDead:
-                isDead = False
+            elif game_state.isDead:
+                game_state.isDead = False
                 yield f"data: dead\n\n"
                 break
             
@@ -361,10 +359,10 @@ def sse_game_status():
 @app.route('/sse_mini_game_one')
 def sse_mini_game_one():
     def event_stream():
-        global is_game_one_done, is_mini_game_one_done
+        from processing.state import game_state
         while True:
             # Memeriksa apakah game sudah selesai
-            if is_game_one_done and is_mini_game_one_done:
+            if game_state.is_game_one_done and game_state.is_mini_game_one_done:
                 yield f"data: redirect\n\n"
                 break  # Menghentikan stream jika game selesai
             time.sleep(1)
@@ -374,10 +372,10 @@ def sse_mini_game_one():
 @app.route('/sse_mini_game_two')
 def sse_mini_game_two():
     def event_stream():
-        global is_game_two_done, is_mini_game_two_done
+        from processing.state import game_state
         while True:
             # Memeriksa apakah game sudah selesai
-            if is_game_two_done and is_mini_game_two_done:
+            if game_state.is_game_two_done and game_state.is_mini_game_two_done:
                 yield f"data: redirect\n\n"
                 break  # Menghentikan stream jika game selesai
             time.sleep(1)
@@ -387,33 +385,31 @@ def sse_mini_game_two():
 @app.route('/sse_mini_game_three')
 def sse_mini_game_three():
     def event_stream():
-        global is_cheat, current_health, is_update, is_game_three_done, is_mini_game_three_done
+        from processing.state import game_state
         while True:
-            if is_game_three_done and is_mini_game_three_done:
+            if game_state.is_game_three_done and game_state.is_mini_game_three_done:
                 yield f"data: redirect\n\n"
                 break
 
-            elif is_cheat:
-                is_cheat = False
+            elif game_state.is_cheat:
+                game_state.is_cheat = False
                 yield f"data: cheat\n\n"            
-            elif is_update and current_health == 0:
-                is_update = False
+            elif game_state.is_update and game_state.current_health == 0:
+                game_state.is_update = False
                 yield f"data: zero\n\n"
-            elif is_update and current_health == 1:
-                is_update = False
+            elif game_state.is_update and game_state.current_health == 1:
+                game_state.is_update = False
                 yield f"data: one\n\n"
-            elif is_update and current_health == 2:
-                is_update = False
+            elif game_state.is_update and game_state.current_health == 2:
+                game_state.is_update = False
                 yield f"data: two\n\n"
-            elif is_update and current_health == 3:
-                is_update = False
+            elif game_state.is_update and game_state.current_health == 3:
+                game_state.is_update = False
                 yield f"data: three\n\n"
                 
             time.sleep(1)
                 
     return Response(event_stream(), content_type='text/event-stream')
-
-
 
 def play_demo():
     from processing.state import game_state
@@ -431,7 +427,6 @@ def sse_menu():
         yield f"data: redirect\n\n"
         sys.stdout.flush()
                 
-
     return Response(event_stream(), content_type='text/event-stream')
 
 
@@ -447,8 +442,8 @@ def sse_menu():
 
 def match_start(num):
     from processing.state import game_state
-    game_state.isGameStart = True
     game_state.targetImageIndex = num
+    game_state.isGameStart = True
 
 def count_down_start(seconds):
     from processing.state import game_state
@@ -506,14 +501,14 @@ def matches_video_feed():
 @app.route('/sse_mini_game_four')
 def sse_mini_game_four():
     def event_stream():
-        global is_game_four_done, is_mini_game_four_done
+        from processing.state import game_state
         
         while True:
-            if is_mini_game_four_done:
-                print("is mini game four true", is_mini_game_four_done)
+            if game_state.is_mini_game_four_done:
+                print("is mini game four true", game_state.is_mini_game_four_done)
             
             # Memeriksa apakah game sudah selesai
-            if is_game_four_done and is_mini_game_four_done:
+            if game_state.is_game_four_done and game_state.is_mini_game_four_done:
                 yield f"data: redirect\n\n"
                 break
             
