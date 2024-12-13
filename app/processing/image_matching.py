@@ -222,11 +222,12 @@ def game_loop(cap):
                 last_thumbs_up_time = None
                 # print("Game reset! Waiting for thumbs up...")
                 
-                from app import send_accuracy, set_match_accuracy
+                from app import send_accuracy, set_match_accuracy, reset_game
                 target_image = cv2.imread(images[random_number])
                 similarity_percentage = image_matching(canvas, target_image)
                 set_match_accuracy(similarity_percentage)
                 print(f"Accuracy: {similarity_percentage}")
+                reset_game()
                 send_accuracy()
 
         canvas_resized = cv2.resize(canvas, (frame.shape[1], frame.shape[0]))

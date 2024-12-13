@@ -399,6 +399,10 @@ def sse_menu():
 
 
 ## Image matching routes ##
+def reset_game():
+    from processing.state import game_state
+    game_state.isGameStart = False
+
 def match_start(num):
     from processing.state import game_state
     game_state.targetImageIndex = num
@@ -484,14 +488,17 @@ def sse_mini_game_four_accuracy():
             if current_time2 - last_update_time2 > 1:  # Send every 15 seconds
                 yield "data: {}\n\n"
                 last_update_time2 = current_time2
+                
+            if game_state.isGameStart == False:
+                yield f"data: {{\"event\": \"wait\"}}\n\n"
             
             if game_state.isSendAccuracy:
                 game_state.isSendAccuracy = False
+                game_state.isGameStart = False
                 print("Sending accuracy:", game_state.match_accuracy)
                 yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {game_state.match_accuracy}}}\n\n"
                 
             if game_state.isGameStart and (current_time - last_update_time > 0.05):
-                game_state.isGameStart = False
                 last_update_time = current_time
                 print("Sending image index:", game_state.targetImageIndex)
                 yield f"data:{{\"event\": \"game_start\", \"image_index\": {game_state.targetImageIndex}}}\n\n"
@@ -504,7 +511,7 @@ def sse_mini_game_four_accuracy():
                     game_state.isCountDownStart = False
                     game_state.current_seconds = 0
             
-            if game_state.isDrawingStart:
+            if game_state.isDrawingStart and game_state.isGameStart:
                 # print("Drawing time", game_state.current_seconds)
                 if game_state.current_seconds <= 20:
                     yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - game_state.current_seconds}}}\n\n"

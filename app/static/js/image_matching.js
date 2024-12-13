@@ -16,6 +16,7 @@ let isReceived = false;
 let isCheatActivated = false;
 let isGameEnd = false;
 let index_image = -1;
+let accuracy_match = -1;
 
 function selectImage(num) {
    document.getElementById('random-image').src = images[num];
@@ -38,7 +39,7 @@ document.addEventListener('keydown', function (event) {
    }
 
    if (currentInput === cheatCode) {
-      triggerCheatCode();  n
+      triggerCheatCode();
       currentInput = ""; 
    }
 });
@@ -92,6 +93,7 @@ eventSource2.onmessage = function (event) {
    const randomImageElement = document.getElementById('random-image');
 
    if (data.event === "game_start") {
+      console.log("game start")
       index_image = data.image_index;
       console.log("Image index received:", index_image);
       if (randomImageElement) {
@@ -108,6 +110,7 @@ eventSource2.onmessage = function (event) {
    }
 
    else if (data.event === "countdown_start"){
+      console.log("countdown start")
       if (index_image == -1) {
          index_image = 0;
          const newSrc = images[0];
@@ -120,26 +123,29 @@ eventSource2.onmessage = function (event) {
    }
 
    else if (data.event === "drawing_start") {
+      console.log("drawing start")
       data_time = data.time
       countdownMessage.textContent = `Time Remaining: ${data_time}s`;
       accuracyText.textContent = ``;
    }
 
    else if (data.event === "countdown_end"){
+      console.log("countdown end")
       countdownMessage.textContent = "";
       accuracyText.textContent = `Accuracy: Calculating...%`;
    }
 
    else if (data.event === 'accuracy') {
+      console.log("accuracy received")
       accuracy_match = data.accuracy;
 
       if (isCheatActivated) {
          console.log("Cheat activated, accuracy set to 999.99");
          accuracy_match = 999.99;
-      }
 
-      countdownMessage.textContent = "Thumbs up to start...";
-      accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
+         countdownMessage.textContent = "Thumbs up to start the game...";
+         accuracyText.textContent = `Accuracy: ${accuracy_match}%`;
+      }
 
       if (accuracy_match > 70) {
 
@@ -148,12 +154,31 @@ eventSource2.onmessage = function (event) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: "Success" }),
          });
+
+         eventSource2.close();
       }
 
       console.log("Accuracy:", accuracy_match);
       isReceived = true;
    }
 
+   else if (data.event === 'wait') {
+      console.log("Waiting for user input...", isCheatActivated);
+      if (isCheatActivated) {
+         countdownMessage.textContent = "Thumbs up to start the game...";
+         accuracyText.textContent = `Accuracy: 999.99%`;
+      }
+
+      else {
+         countdownMessage.textContent = "Thumbs up to start the game...";
+         if (accuracy_match === -1){
+            accuracyText.textContent = ``;
+         }else{
+            accuracyText.textContent = `Accuracy: ${accuracy_match.toFixed(2)}%`;
+         }
+      }
+
+   }
 };
 
 eventSource.onerror = function (error) {
