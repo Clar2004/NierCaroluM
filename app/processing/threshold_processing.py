@@ -3,10 +3,17 @@ import numpy as np
 import mediapipe as mp
 from threading import Lock
 from collections import deque
-import pygame
+import pygame, sys, os
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
+
 
 threshold_level = 128  
 lock = Lock()
@@ -33,7 +40,7 @@ def generate_threshold_frames(camera, frame_width=800, frame_height=600):
     global threshold_level, input_image, previous_x, thumb_path, line_alpha
     
     pygame.mixer.init()
-    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
 
     while True:

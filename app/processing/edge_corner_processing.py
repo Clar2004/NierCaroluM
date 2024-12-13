@@ -2,15 +2,21 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import time
-import pygame
+import pygame, sys, os
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.6, min_tracking_confidence=0.6)
+hands = mp_hands.Hands(min_detection_confidence=0.6, min_tracking_confidence=0.6, max_num_hands=1)
 
 thumb_path = []  
 health_points = 3  
 game_started = False
 cheat_mode_activated = False  
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
 
 def initialize_maze_image(image_path):
     image = cv2.imread(image_path)
@@ -62,9 +68,9 @@ def generate_maze_interaction_frames(camera):
     from app import change_mini_game_three_state
     global thumb_path, health_points, game_started, cheat_mode_activated
 
-    maze_image, edges, corners = initialize_maze_image('static/assets/images/maze.jpg')
+    maze_image, edges, corners = initialize_maze_image(get_resource_path('static/assets/images/maze.jpg'))
     pygame.mixer.init()
-    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
 
     game_started = False

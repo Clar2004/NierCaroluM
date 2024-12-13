@@ -2,29 +2,36 @@ import cv2
 import mediapipe as mp
 from flask import Flask, Response, render_template
 import os
+import sys
 import pygame
-import time
+import time, numpy as np
 from state import *
 
 app = Flask(__name__)
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
 
-title_image_path = os.path.join(os.getcwd(), 'static', 'assets', 'images', 'Title_White.png')
-cursor_image_path = os.path.join(os.getcwd(), 'static', 'assets', 'cursors', 'CursorNier.png')
-background_video_path = os.path.join(os.getcwd(), 'static', 'assets', 'TitleBackground.mp4')
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
 
-title_image = cv2.imread(title_image_path, cv2.IMREAD_UNCHANGED) 
-cursor_image2 = cv2.imread(cursor_image_path, cv2.IMREAD_UNCHANGED) 
+# title_image_path = os.path.join(os.getcwd(), 'static', 'assets', 'images', 'Title_White.png')
+# cursor_image_path = os.path.join(os.getcwd(), 'static', 'assets', 'cursors', 'CursorNier.png')
+# background_video_path = os.path.join(os.getcwd(), 'static', 'assets', 'TitleBackground.mp4')
+
+title_image = cv2.imread(get_resource_path('static/assets/images/Title_white.png'), cv2.IMREAD_UNCHANGED) 
+cursor_image2 = cv2.imread(get_resource_path('static/assets/cursors/CursorNier.png'), cv2.IMREAD_UNCHANGED) 
 resize_factor = 0.8 
 new_width = int(cursor_image2.shape[1] * resize_factor)
 new_height = int(cursor_image2.shape[0] * resize_factor)
 
 cursor_image = cv2.resize(cursor_image2, (new_width, new_height))
 
-cap_background = cv2.VideoCapture(background_video_path)
+cap_background = cv2.VideoCapture(get_resource_path('static/assets/TitleBackground.mp4'))
 
 screen_width = 2860
 screen_height = 1080
@@ -32,9 +39,10 @@ screen_height = 1080
 last_click_time = time.time()
 
 def is_pinch(landmarks):
-    thumb_tip = landmarks[mp_hands.HandLandmark.THUMB_TIP].x
-    index_tip = landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP].x
-    return abs(thumb_tip - index_tip) < 0.01  
+    thumb_tip = landmarks[mp_hands.HandLandmark.THUMB_TIP]
+    index_tip = landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    distance = np.sqrt((thumb_tip.x - index_tip.x) ** 2 + (thumb_tip.y - index_tip.y) ** 2)
+    return distance < 0.05
 
 def is_one_finger(landmarks):
     index_mcp = landmarks[mp_hands.HandLandmark.INDEX_FINGER_MCP].y
@@ -78,7 +86,7 @@ def detect_gestures_and_stream(cap_camera):
 
     last_emitted = {'x': None, 'y': None, 'gesture': None}
     pygame.mixer.init()
-    pygame.mixer.music.load("static/assets/sound/TitleSound.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/TitleSound.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
 
     while True:

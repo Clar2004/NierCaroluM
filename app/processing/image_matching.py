@@ -3,11 +3,17 @@ import mediapipe as mp
 import numpy as np
 import time
 import pygame
-import random
+import random, sys, os
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5, max_num_hands=1)
 mp_drawing = mp.solutions.drawing_utils
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
 
 images = [
    "static/assets/image_matching/circle.jpg",
@@ -96,7 +102,7 @@ def game_loop(cap):
     trigger_end_countdown = False
 
     pygame.mixer.init()
-    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
 
     while True:
@@ -223,7 +229,7 @@ def game_loop(cap):
                 # print("Game reset! Waiting for thumbs up...")
                 
                 from app import send_accuracy, set_match_accuracy, reset_game
-                target_image = cv2.imread(images[random_number])
+                target_image = cv2.imread(get_resource_path(images[random_number]))
                 similarity_percentage = image_matching(canvas, target_image)
                 set_match_accuracy(similarity_percentage)
                 print(f"Accuracy: {similarity_percentage}")

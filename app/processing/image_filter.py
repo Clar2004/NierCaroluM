@@ -3,9 +3,16 @@ import numpy as np
 import mediapipe as mp
 from scipy.signal import wiener
 import pygame
+import sys, os
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
 
 filter_type = "gaussian"  
 filter_radius = 50  
@@ -115,7 +122,7 @@ def process_frame(camera):
 
 def generate_frames(camera):
     pygame.mixer.init()
-    pygame.mixer.music.load("static/assets/sound/boss_bg_8bit.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
     
     while True:

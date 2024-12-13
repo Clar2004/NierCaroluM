@@ -7,21 +7,27 @@ from ball import RedBall
 import math
 import os
 import pygame
+import sys
 
 SHOT_COOLDOWN = 0.3
 last_shot_time = 0
 
-player_image = cv2.imread("static/assets/combat_assets/Player.png", cv2.IMREAD_UNCHANGED)  
-shot_image = cv2.imread("static/assets/shot_animation/shot2_exp1.png", cv2.IMREAD_UNCHANGED)  
-shot2_exp2 = cv2.imread("static/assets/shot_animation/shot2_exp2.png", cv2.IMREAD_UNCHANGED)
-shot2_exp3 = cv2.imread("static/assets/shot_animation/shot2_exp3.png", cv2.IMREAD_UNCHANGED)
-shot2_exp4 = cv2.imread("static/assets/shot_animation/shot2_exp4.png", cv2.IMREAD_UNCHANGED)
-shot2_exp5 = cv2.imread("static/assets/shot_animation/shot2_exp5.png", cv2.IMREAD_UNCHANGED)
-laser_image = cv2.imread("static/assets/boss_asset/red_ball.png", cv2.IMREAD_UNCHANGED)
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
+
+player_image = cv2.imread(get_resource_path("static/assets/combat_assets/Player.png"), cv2.IMREAD_UNCHANGED)  
+shot_image = cv2.imread(get_resource_path("static/assets/shot_animation/shot2_exp1.png"), cv2.IMREAD_UNCHANGED)  
+shot2_exp2 = cv2.imread(get_resource_path("static/assets/shot_animation/shot2_exp2.png"), cv2.IMREAD_UNCHANGED)
+shot2_exp3 = cv2.imread(get_resource_path("static/assets/shot_animation/shot2_exp3.png"), cv2.IMREAD_UNCHANGED)
+shot2_exp4 = cv2.imread(get_resource_path("static/assets/shot_animation/shot2_exp4.png"), cv2.IMREAD_UNCHANGED)
+shot2_exp5 = cv2.imread(get_resource_path("static/assets/shot_animation/shot2_exp5.png"), cv2.IMREAD_UNCHANGED)
+laser_image = cv2.imread(get_resource_path("static/assets/boss_asset/red_ball.png"), cv2.IMREAD_UNCHANGED)
 
 if laser_image is None:
     print("Error: Laser image failed to load.")
-    exit()
 
 scale_factor_player = 1.5  
 scale_factor_shot = 2.0  
@@ -29,7 +35,7 @@ scale_factor_shot = 2.0
 player_image = cv2.resize(player_image, None, fx=scale_factor_player, fy=scale_factor_player, interpolation=cv2.INTER_LINEAR)
 shot_image = cv2.resize(shot_image, None, fx=scale_factor_shot, fy=scale_factor_shot, interpolation=cv2.INTER_LINEAR)
 
-bg_image = cv2.imread("static/assets/images/combat_bg2.png", cv2.IMREAD_UNCHANGED) 
+bg_image = cv2.imread(get_resource_path("static/assets/images/combat_bg2.png"), cv2.IMREAD_UNCHANGED) 
 bg_height, bg_width, _ = bg_image.shape
 video_width = 2560
 video_height = 1240
@@ -62,10 +68,10 @@ BOSS_STATE_SHOOTING_LASERS = "shooting laser"
 boss_state = BOSS_STATE_IDLE_INITIAL
 state_change_time = None
 
-boss_image = cv2.imread("static/assets/boss_asset/bos_1.png", cv2.IMREAD_UNCHANGED)
+boss_image = cv2.imread(get_resource_path("static/assets/boss_asset/bos_1.png"), cv2.IMREAD_UNCHANGED)
 if boss_image is None:
     print("Error loading boss image")
-    exit()
+    
 scale_factor_boss = 1.0
 boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
 print(boss_image.shape)
@@ -84,7 +90,7 @@ health_bar_y = 50
 max_health = 1000
 boss_health = 1000
 
-red_ball_image = cv2.imread('static/assets/boss_asset/red_ball.png', cv2.IMREAD_UNCHANGED) 
+red_ball_image = cv2.imread(get_resource_path('static/assets/boss_asset/red_ball.png'), cv2.IMREAD_UNCHANGED) 
 ball_speed = 15  
 boss_speed = 10
 ball2_speed = 15
@@ -102,13 +108,13 @@ image_change_duration = 2
 boss_image_index = 1  
 
 player_health = 5  
-health_image = cv2.imread('static/assets/images/yorha-logo.png', cv2.IMREAD_UNCHANGED) 
+health_image = cv2.imread(get_resource_path('static/assets/images/yorha-logo.png'), cv2.IMREAD_UNCHANGED) 
 health_offset_x = 200
 health_offset_y = 20
 
-animation_folder = 'static/assets/explosion' 
+animation_folder = get_resource_path('static/assets/explosion')
 animation_images = []
-frame_delay = 300 
+frame_delay = 500 
 
 show_text_start_time = None
 
@@ -117,6 +123,24 @@ isGameThreeDone = False
 
 isPaused = False
 isPausedActive = False
+
+def is_peace_sign(hand_landmarks):
+    index_finger_tip = hand_landmarks.landmark[8]
+    middle_finger_tip = hand_landmarks.landmark[12]
+    
+    index_up = index_finger_tip.y < hand_landmarks.landmark[6].y
+    middle_up = middle_finger_tip.y < hand_landmarks.landmark[10].y
+
+    thumb_finger_tip = hand_landmarks.landmark[4]
+    thumb_curl = thumb_finger_tip.y > hand_landmarks.landmark[3].y
+
+    ring_finger_tip = hand_landmarks.landmark[16]
+    ring_curl = ring_finger_tip.y > hand_landmarks.landmark[14].y
+
+    pinky_tip = hand_landmarks.landmark[20]
+    pinky_curl = pinky_tip.y > hand_landmarks.landmark[18].y
+
+    return index_up and middle_up and thumb_curl and ring_curl and pinky_curl
 
 def load_animation_images():
     global animation_images
@@ -156,18 +180,18 @@ def check_collisions_and_update_health( combined_frame, hit_sound, isCheat):
             player_health -= 1 
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health < 1:
-                isDead = True
-                pygame.mixer.music.stop()
-                run_death_animation(animation_images, player_x, player_y, combined_frame)
+            # if player_health < 1:
+            #     isDead = True
+            #     pygame.mixer.music.stop()
+            #     run_death_animation(animation_images, player_x, player_y, combined_frame)
                 
-                pygame.time.delay(1000)
-                hit_sound.stop()
+            #     hit_sound.stop()
                 
-                from app import player_dead
-                player_dead()
+            #     from app import player_dead
+            #     player_dead()
                 
-                death_timer = time.time()
+            #     death_timer = time.time()
+            #     break
                 
             break  
 
@@ -177,34 +201,34 @@ def check_collisions_and_update_health( combined_frame, hit_sound, isCheat):
             player_health -= 1 
             hit_sound.set_volume(0.6)
             hit_sound.play()
-            if player_health < 1:
-                pygame.mixer.music.stop()
-                run_death_animation(animation_images, player_x, player_y, combined_frame)
+            # if player_health < 1:
+            #     isDead = True
+            #     pygame.mixer.music.stop()
+            #     run_death_animation(animation_images, player_x, player_y, combined_frame)
                 
-                pygame.time.delay(1000)
-                hit_sound.stop()
+            #     hit_sound.stop()
                 
-                from app import player_dead
-                player_dead()
+            #     from app import player_dead
+            #     player_dead()
                 
-                death_timer = time.time()
+            #     death_timer = time.time()
 
-            break  
+            break
     
     if is_collision_with_boss(combined_frame) and not isCheat:
         player_health = player_health - 5
         
-        if player_health < 1:
-            isDead = True
-            pygame.mixer.music.stop()
-            run_death_animation(animation_images, player_x, player_y, combined_frame)
-            
-            hit_sound.stop()
-    
-            from app import player_dead
-            player_dead()
-            
-            death_timer = time.time()
+    if player_health < 1:
+        isDead = True
+        pygame.mixer.music.stop()
+        run_death_animation(animation_images, player_x, player_y, combined_frame)
+        
+        hit_sound.stop()
+        
+        from app import player_dead
+        player_dead()
+        
+        death_timer = time.time()
             
     if isDead and time.time() - death_timer < 2:
         isCheat = True
@@ -365,21 +389,12 @@ def detect_hand_gesture(frame):
             if hand_label == 'Right': 
                 right_hand_position = (int(index_finger_tip.x * video_width), int(index_finger_tip.y * video_height))
 
-
             elif hand_label == 'Left': 
                 if (abs(thumb_tip.x - index_finger_tip.x) < 0.05 and
                     abs(index_finger_tip.x - middle_finger_tip.x) < 0.05 and
                     abs(middle_finger_tip.x - ring_finger_tip.x) < 0.05 and
                     abs(ring_finger_tip.x - pinky_finger_tip.x) < 0.05):
                     left_hand_gesture = "fist"
-                
-                elif (index_finger_tip.y < middle_finger_tip.y and   
-                    index_finger_tip.y < ring_finger_tip.y and    
-                    index_finger_tip.y < pinky_finger_tip.y and    
-                    middle_finger_tip.y < ring_finger_tip.y and    
-                    middle_finger_tip.y < pinky_finger_tip.y and   
-                    abs(index_finger_tip.x - middle_finger_tip.x) > 0.1):  
-                    right_hand_gesture = "cheat"
                     
                 elif (abs(thumb_tip.x - index_finger_tip.x) > 0.1 and
                     abs(index_finger_tip.x - middle_finger_tip.x) > 0.1 and
@@ -391,6 +406,9 @@ def detect_hand_gesture(frame):
                     abs(ring_finger_tip.y - wrist.y) > 0.2 and
                     abs(pinky_finger_tip.y - wrist.y) > 0.2):
                     right_hand_gesture = "open"  
+                
+                elif is_peace_sign(hand_landmarks): 
+                    right_hand_gesture = "peace"
 
     return right_hand_position, left_hand_gesture, right_hand_gesture
 
@@ -735,7 +753,7 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 move_lasers()
                 draw_lasers(combined_frame)
             else:
-                boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
+                boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_2.png'), cv2.IMREAD_UNCHANGED)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -753,7 +771,7 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 move_lasers()
                 draw_lasers(combined_frame)
             else:
-                boss_image = cv2.imread('static/assets/boss_asset/bos_3.png', cv2.IMREAD_UNCHANGED)
+                boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_3.png'), cv2.IMREAD_UNCHANGED)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -801,7 +819,7 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 move_lasers()
                 draw_lasers(combined_frame)
             else:
-                boss_image = cv2.imread('static/assets/boss_asset/bos_2.png', cv2.IMREAD_UNCHANGED)
+                boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_2.png'), cv2.IMREAD_UNCHANGED)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -817,7 +835,7 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 move_lasers()
                 draw_lasers(combined_frame)
             else:
-                boss_image = cv2.imread('static/assets/boss_asset/bos_1.png', cv2.IMREAD_UNCHANGED)
+                boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_1.png'), cv2.IMREAD_UNCHANGED)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -929,12 +947,12 @@ def scroll_background(camera, isReset):
     
     pygame.mixer.init()
     
-    pygame.mixer.music.load("static/assets/sound/boss_bg.mp3")
+    pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
     
-    shoot_sound = pygame.mixer.Sound("static/assets/sound/shoot_sound.mp3")
-    boss_change_sound = pygame.mixer.Sound("static/assets/sound/boss_change_sound.mp3")
-    hit_sound = pygame.mixer.Sound("static/assets/sound/dead_sound.mp3")
+    shoot_sound = pygame.mixer.Sound(get_resource_path("static/assets/sound/shoot_sound.mp3"))
+    boss_change_sound = pygame.mixer.Sound(get_resource_path("static/assets/sound/boss_change_sound.mp3"))
+    hit_sound = pygame.mixer.Sound(get_resource_path("static/assets/sound/dead_sound.mp3"))
 
     while True:
         from state import game_state
@@ -1004,7 +1022,7 @@ def scroll_background(camera, isReset):
             if left_hand_gesture == "fist":
                 shoot(player_x, player_y, last_facing_direction, shoot_sound)
                 
-            if right_hand_gesture == "cheat" and isCheatTriggered == False:
+            if right_hand_gesture == "peace" and isCheatTriggered == False:
                 print("Activate cheat")
                 isCheat = True
                 isCheatTriggered = True

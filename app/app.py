@@ -18,6 +18,13 @@ import time
 from processing.image_matching import game_loop
 from processing.menu_gesture_control import detect_gestures_and_stream
 from processing.state import *
+import numpy as np
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.getcwd(), relative_path)
 
 app = Flask(__name__)
 app.config['DEBUG'] = True 
@@ -27,12 +34,49 @@ CORS(app)
 
 camera = cv2.VideoCapture(1)
 
+# def generate_black_frame_with_text():
+#     # Create a black frame
+#     frame_size = (480, 640, 3)
+#     black_frame = np.zeros(frame_size, dtype=np.uint8)
+
+#     # Add text message using OpenCV
+#     text = "Camera not detected. Please connect a camera."
+#     font = cv2.FONT_HERSHEY_SIMPLEX
+#     font_scale = 1
+#     font_thickness = 2
+#     text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+#     text_x = (frame_size[1] - text_size[0]) // 2
+#     text_y = (frame_size[0] + text_size[1]) // 2
+#     cv2.putText(black_frame, text, (text_x, text_y), font, font_scale, (255, 255, 255), font_thickness)
+
+#     # Encode the black frame to JPEG
+#     _, buffer = cv2.imencode('.jpg', black_frame)
+#     return buffer.tobytes()
+
 @app.route('/')
 def menu():
     return render_template('menu.html')
 
 @app.route('/menu_video_feed')
 def menu_feed():
+    # def generate_black_frame_with_text():
+    #     # Create a black frame
+    #     frame_size = (480, 640, 3)
+    #     black_frame = np.zeros(frame_size, dtype=np.uint8)
+
+    #     # Add text message using OpenCV
+    #     text = "Camera not detected. Please connect a camera."
+    #     font = cv2.FONT_HERSHEY_SIMPLEX
+    #     font_scale = 1
+    #     font_thickness = 2
+    #     text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+    #     text_x = (frame_size[1] - text_size[0]) // 2
+    #     text_y = (frame_size[0] + text_size[1]) // 2
+    #     cv2.putText(black_frame, text, (text_x, text_y), font, font_scale, (255, 255, 255), font_thickness)
+
+    #     # Encode the black frame to JPEG
+    #     _, buffer = cv2.imencode('.jpg', black_frame)
+    #     return buffer.tobytes()
     
     if not camera.isOpened():
         camera.open(0)
@@ -42,6 +86,22 @@ def menu_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503,  
             )
+        # while True:
+        #     frame = generate_black_frame_with_text()
+        #     yield (b'--frame\r\n'
+        #             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    # else:
+    #     # Camera is available; stream real footage
+    #     while True:
+    #         ret, frame = camera.read()
+    #         if not ret:
+    #             break
+
+    #         # Encode the frame to JPEG
+    #         _, buffer = cv2.imencode('.jpg', frame)
+    #         frame = buffer.tobytes()
+    #         yield (b'--frame\r\n'
+    #                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     try:
         return Response(
@@ -55,7 +115,7 @@ def menu_feed():
             status=500, 
         )
 
-initialize_base_image("static/assets/images/Image_Filter_Asset.png", blur_strength=51) 
+initialize_base_image(get_resource_path("static/assets/images/Image_Filter_Asset.png"), blur_strength=51)
 
 @app.route('/image_filter')
 def image_filter_page():
@@ -63,6 +123,23 @@ def image_filter_page():
 
 @app.route('/video_feed')
 def video_feed():
+    
+    # def generate_black_frame_with_text():
+    #     frame_size = (480, 640, 3)
+    #     black_frame = np.zeros(frame_size, dtype=np.uint8)
+
+    #     text = "Camera not detected. Please connect a camera."
+    #     font = cv2.FONT_HERSHEY_SIMPLEX
+    #     font_scale = 1
+    #     font_thickness = 2
+    #     text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+    #     text_x = (frame_size[1] - text_size[0]) // 2
+    #     text_y = (frame_size[0] + text_size[1]) // 2
+    #     cv2.putText(black_frame, text, (text_x, text_y), font, font_scale, (255, 255, 255), font_thickness)
+
+    #     _, buffer = cv2.imencode('.jpg', black_frame)
+    #     return buffer.tobytes()
+    
     if not camera.isOpened():
         camera.open(0)
         if not camera.isOpened():
@@ -71,6 +148,20 @@ def video_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503, 
             )
+    #     while True:
+    #         frame = generate_black_frame_with_text()
+    #         yield (b'--frame\r\n'
+    #                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    # else:
+    #     while True:
+    #         ret, frame = camera.read()
+    #         if not ret:
+    #             break
+
+    #         _, buffer = cv2.imencode('.jpg', frame)
+    #         frame = buffer.tobytes()
+    #         yield (b'--frame\r\n'
+    #                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     try:
         return Response(
@@ -85,7 +176,7 @@ def video_feed():
         )
 
 ##  Threshold Processing Routes ##
-image_path = "static/assets/images/Threshold.png"
+image_path = get_resource_path("static/assets/images/Threshold.png")
 initialize_threshold_image(image_path)
 
 @app.route("/threshold")
@@ -104,6 +195,10 @@ def threshold_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503, 
             )
+        # while True:
+        #     frame = generate_black_frame_with_text()
+        #     yield (b'--frame\r\n'
+        #             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     try:
         return Response(
@@ -132,6 +227,10 @@ def edge_corner_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503,
             )
+        # while True:
+        #     frame = generate_black_frame_with_text()
+        #     yield (b'--frame\r\n'
+        #             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     try:
         return Response(
@@ -180,6 +279,10 @@ def combat_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503,  
             )
+        # while True:
+        #     frame = generate_black_frame_with_text()
+        #     yield (b'--frame\r\n'
+        #             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     if game_state.isReset:
         game_state.isReset = False
@@ -447,6 +550,10 @@ def matches_video_feed():
                 "Camera not available. Please ensure the camera is connected and not used by another application.",
                 status=503, 
             )
+        # while True:
+        #     frame = generate_black_frame_with_text()
+        #     yield (b'--frame\r\n'
+        #             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     try:
         return Response(
@@ -530,6 +637,17 @@ def sse_mini_game_four_accuracy():
             
     return Response(event_stream(), content_type='text/event-stream')
 
+shutdown_event = threading.Event()
+import signal
+import os
+
+def stop_flask():
+    """Stop Flask server and terminate the program."""
+    print("Closing window and stopping Flask...")
+    shutdown_event.set()
+    os.kill(os.getpid(), signal.SIGTERM) 
+    os._exit(0)
+
 def run_flask():
     serve(app, host="127.0.0.1", port=5000)
         
@@ -537,18 +655,23 @@ import webview
 from waitress import serve
 
 if __name__ == "__main__":
-    serve(app, host="127.0.0.1", port=5000, threads=8)
+    # serve(app, host="127.0.0.1", port=5000, threads=8)
     
-    # from threading import Thread
+    from threading import Thread
     
-    # def run_flask():
-    #     app.run(debug=False, port=5000, use_reloader=False)
+    def run_flask():
+        app.run(debug=False, port=5000, use_reloader=False)
 
-    # flask_thread = Thread(target=run_flask)
-    # flask_thread.start()
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
 
-    # window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
+    window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
 
-    # webview.start()
+    try:
+        webview.start()
+    except Exception as e:
+        print("Error starting webview:", e)
+    finally:
+        stop_flask()
 
-    # flask_thread.join()
+    flask_thread.join()
