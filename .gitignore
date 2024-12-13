@@ -2,3 +2,4 @@
 .venv/
 app/__pycache__/
 app/processing/__pycache__/
+output/
