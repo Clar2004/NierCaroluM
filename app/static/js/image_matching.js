@@ -88,11 +88,12 @@ eventSource2.onmessage = function (event) {
    //    document.getElementById('random-image').src = images[index_image];
    //    // selectImage(index_image);
    // }
+
    const randomImageElement = document.getElementById('random-image');
 
    if (data.event === "game_start") {
+      index_image = data.image_index;
       console.log("Image index received:", index_image);
-
       if (randomImageElement) {
          const newSrc = images[index_image];
          if (newSrc) {
@@ -107,7 +108,8 @@ eventSource2.onmessage = function (event) {
    }
 
    else if (data.event === "countdown_start"){
-      if (index_image === -1) {
+      if (index_image == -1) {
+         index_image = 0;
          const newSrc = images[0];
          randomImageElement.src = `${newSrc}?t=${new Date().getTime()}`;
          console.log("Test");
