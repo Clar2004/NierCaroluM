@@ -11,6 +11,9 @@ class GameState:
         self.isSendAccuracy = False
         self.match_accuracy = None
         self.current_seconds = 0
+        self.current_seconds_2 = 0
+        self.current_seconds_3 = 0
+        self.isStartTriggered = False
         
         #Combat game
         self.isReset = False

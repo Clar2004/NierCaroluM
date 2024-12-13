@@ -505,17 +505,19 @@ def sse_menu():
 def reset_game():
     from processing.state import game_state
     game_state.isGameStart = False
+    game_state.isStartTriggered = False
 
 def match_start(num):
     from processing.state import game_state
     game_state.targetImageIndex = num
     game_state.isGameStart = True
+    game_state.isStartTriggered = True
     print("Game start with image index:", num)
 
 def count_down_start(seconds):
     from processing.state import game_state
     game_state.isCountDownStart = True
-    game_state.current_seconds = seconds
+    game_state.current_seconds_2 = seconds
 
 def drawing_start(seconds):
     from processing.state import game_state
@@ -525,7 +527,7 @@ def drawing_start(seconds):
 def count_down_end(seconds):
     from processing.state import game_state
     game_state.isCountDownEnd = True
-    game_state.current_seconds = seconds
+    game_state.current_seconds_3 = seconds
     
 def send_accuracy():
     from processing.state import game_state
@@ -581,16 +583,31 @@ def sse_mini_game_four():
             
     return Response(event_stream(), content_type='text/event-stream')
 
+def reset_game_four():
+    from processing.state import game_state
+    game_state.isCountDownStart = False
+    game_state.isDrawingStart = False
+    game_state.isCountDownEnd = False
+    game_state.isSendAccuracy = False
+    game_state.match_accuracy = None
+    game_state.current_seconds = 0
+    game_state.current_seconds_2 = 0
+    game_state.current_seconds_3 = 0
+    game_state.isStartTriggered = False
+
 @app.route('/sse_mini_game_four_accuracy')
 def sse_mini_game_four_accuracy():
     def event_stream():
-        from processing.state import game_state
+        # from processing.state import game_state
         last_update_time = time.time()
         last_update_time2 = time.time()
                 
         while True:
+            from processing.state import game_state
             current_time = time.time()
             current_time2 = time.time()
+            
+            # print(game_state.isCountDownEnd)
             
             if current_time2 - last_update_time2 > 1:  # Send every 15 seconds
                 yield "data: {}\n\n"
@@ -600,38 +617,40 @@ def sse_mini_game_four_accuracy():
                 yield f"data: {{\"event\": \"wait\"}}\n\n"
             
             if game_state.isSendAccuracy:
+                game_state.isCountDownEnd = False
                 game_state.isSendAccuracy = False
                 game_state.isGameStart = False
                 print("Sending accuracy:", game_state.match_accuracy)
                 yield f"data: {{\"event\": \"accuracy\", \"accuracy\": {game_state.match_accuracy}}}\n\n"
                 
-            if game_state.isGameStart and (current_time - last_update_time > 0.05):
+            if game_state.isGameStart and game_state.isStartTriggered and (current_time - last_update_time > 0.05):
+                game_state.isStartTriggered = False
                 last_update_time = current_time
                 print("Sending image index:", game_state.targetImageIndex)
                 yield f"data:{{\"event\": \"game_start\", \"image_index\": {game_state.targetImageIndex}}}\n\n"
             
             if game_state.isCountDownStart:
-                # print("Countdown start time", game_state.current_seconds)
-                if game_state.current_seconds <= 3 :
-                    yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - game_state.current_seconds}}}\n\n"
-                elif game_state.current_seconds > 3:
+                print("Countdown start time", game_state.current_seconds)
+                if game_state.current_seconds_2 > 3:
                     game_state.isCountDownStart = False
-                    game_state.current_seconds = 0
+                    game_state.current_seconds_2 = 0
+                else:
+                    yield f"data:{{\"event\": \"countdown_start\", \"time\": {3 - game_state.current_seconds_2}}}\n\n"
             
             if game_state.isDrawingStart and game_state.isGameStart:
-                # print("Drawing time", game_state.current_seconds)
+                print("Drawing time", game_state.current_seconds)
                 if game_state.current_seconds <= 20:
                     yield f"data:{{\"event\": \"drawing_start\", \"time\": {20 - game_state.current_seconds}}}\n\n"
                 else:
                     game_state.isDrawingStart = False
                     game_state.current_seconds = 0
             if game_state.isCountDownEnd:
-                # print("Countdown end", game_state.current_seconds)
-                if game_state.current_seconds <= 3:
+                print("Countdown end", game_state.current_seconds_3)
+                if game_state.current_seconds_3 <= 3:
                     yield f"data:{{\"event\": \"countdown_end\"}}\n\n"
-                elif game_state.current_seconds > 3:
+                elif game_state.current_seconds_3 > 3:
                     game_state.isCountDownEnd = False
-                    game_state.current_seconds = 0
+                    game_state.current_seconds_3 = 0
             
             time.sleep(0.05) 
             
@@ -665,7 +684,7 @@ if __name__ == "__main__":
     flask_thread = Thread(target=run_flask)
     flask_thread.start()
 
-    window = webview.create_window('BPCV', 'http://127.0.0.1:5000', fullscreen=True)
+    window = webview.create_window('NieR: CaroluM', 'http://127.0.0.1:5000', fullscreen=True)
 
     try:
         webview.start()

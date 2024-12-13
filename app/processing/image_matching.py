@@ -49,10 +49,40 @@ def image_matching(drawn_image, target_image):
 
 def is_thumbs_up(hand_landmarks):
     thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
-    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    thumb_ip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_IP]
     thumb_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_MCP]
+    thumb_cmc = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_CMC]
     
-    thumbs_up = thumb_tip.y < thumb_mcp.y and index_tip.y > thumb_tip.y
+    index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+    index_dip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_DIP]
+    index_pip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_PIP]
+    index_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_MCP]
+    
+    middle_tip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+    middle_dip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_DIP]
+    middle_pip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_PIP]
+    middle_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_MCP]
+    
+    ring_tip = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_TIP]
+    ring_dip = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_DIP]
+    ring_pip = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_PIP]
+    ring_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.RING_FINGER_MCP]
+    
+    pinky_tip = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_TIP]
+    pinky_dip = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_DIP]
+    pinky_pip = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_PIP]
+    pinky_mcp = hand_landmarks.landmark[mp_hands.HandLandmark.PINKY_MCP]
+    
+    # Check if thumb is up
+    thumb_up = thumb_tip.y < thumb_ip.y < thumb_mcp.y < thumb_cmc.y
+    
+    # Check if other fingers are down
+    index_down = index_tip.y > index_dip.y > index_pip.y > index_mcp.y
+    middle_down = middle_tip.y > middle_dip.y > middle_pip.y > middle_mcp.y
+    ring_down = ring_tip.y > ring_dip.y > ring_pip.y > ring_mcp.y
+    pinky_down = pinky_tip.y > pinky_dip.y > pinky_pip.y > pinky_mcp.y
+    
+    thumbs_up = thumb_up and index_down and middle_down and ring_down and pinky_down
     return thumbs_up
 
 def draw_text(frame, text, position=(50, 50), font_scale=1, color=(0, 255, 0), thickness=2):
@@ -160,17 +190,17 @@ def game_loop(cap):
                     if is_thumbs_up(landmarks):
                         current_time = time.time()  
 
-                        if current_time - last_thumbs_up_detection_time >= 2:  
+                        if current_time - last_thumbs_up_detection_time >= 1:  
                             if not game_started and waiting_for_thumbs_up:
                                 trigger_start_countdown = True
                                 waiting_for_thumbs_up = False
                                 
                                 random_number = random.randint(0, 1)
-                                print("Random number: ", random_number)
+                                # print("Random number: ", random_number)
                                 from app import match_start
                                 match_start(random_number)
  
-                                print("Thumbs up detected! Starting countdown...")
+                                # print("Thumbs up detected! Starting countdown...")
                                 canvas = np.ones((480, 640, 3), dtype=np.uint8) * 255  
                                 last_thumbs_up_detection_time = current_time
                                 last_thumbs_up_time = time.time()  
@@ -195,8 +225,8 @@ def game_loop(cap):
                 last_thumbs_up_time = None
                 drawing_start_time = time.time() 
                 
-        elif game_started and drawing_start_time is not None:
-            
+        if game_started and drawing_start_time is not None:
+            # print("Drawing time started!")
             time_elapsed = time.time() - drawing_start_time
             countdown_value = int(time_elapsed)
             
@@ -214,7 +244,7 @@ def game_loop(cap):
                 last_thumbs_up_time = time.time()  
                 print("Drawing time ended! Waiting for 3 seconds before resetting...")
 
-        elif trigger_end_countdown and last_thumbs_up_time is not None:
+        if trigger_end_countdown and last_thumbs_up_time is not None:
             # print("starting end cooldown")
             
             time_elapsed = time.time() - last_thumbs_up_time
@@ -222,11 +252,11 @@ def game_loop(cap):
             
             from app import count_down_end
             count_down_end(countdown_value)
-            if time_elapsed > 4:
+            if time_elapsed > 3:
                 waiting_for_thumbs_up = True
                 trigger_end_countdown = False
                 last_thumbs_up_time = None
-                # print("Game reset! Waiting for thumbs up...")
+                print("Game reset! Waiting for thumbs up...")
                 
                 from app import send_accuracy, set_match_accuracy, reset_game
                 target_image = cv2.imread(get_resource_path(images[random_number]))

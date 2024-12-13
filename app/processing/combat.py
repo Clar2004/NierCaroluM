@@ -29,16 +29,20 @@ laser_image = cv2.imread(get_resource_path("static/assets/boss_asset/red_ball.pn
 if laser_image is None:
     print("Error: Laser image failed to load.")
 
-scale_factor_player = 1.5  
-scale_factor_shot = 2.0  
+scale_factor_player = 1.3  
+scale_factor_shot = 1.7 
 
 player_image = cv2.resize(player_image, None, fx=scale_factor_player, fy=scale_factor_player, interpolation=cv2.INTER_LINEAR)
 shot_image = cv2.resize(shot_image, None, fx=scale_factor_shot, fy=scale_factor_shot, interpolation=cv2.INTER_LINEAR)
 
 bg_image = cv2.imread(get_resource_path("static/assets/images/combat_bg2.png"), cv2.IMREAD_UNCHANGED) 
 bg_height, bg_width, _ = bg_image.shape
-video_width = 2560
-video_height = 1240
+
+video_width = 1920
+video_height = 1080
+
+# video_width = 2560
+# video_height = 1240
 
 player_x = 100 
 player_y = video_height // 2 
@@ -72,7 +76,7 @@ boss_image = cv2.imread(get_resource_path("static/assets/boss_asset/bos_1.png"),
 if boss_image is None:
     print("Error loading boss image")
     
-scale_factor_boss = 1.0
+scale_factor_boss = 0.9
 boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
 print(boss_image.shape)
 
@@ -90,10 +94,14 @@ health_bar_y = 50
 max_health = 1000
 boss_health = 1000
 
-red_ball_image = cv2.imread(get_resource_path('static/assets/boss_asset/red_ball.png'), cv2.IMREAD_UNCHANGED) 
-ball_speed = 15  
-boss_speed = 10
-ball2_speed = 15
+
+red_ball_image2 = cv2.imread(get_resource_path('static/assets/boss_asset/red_ball.png'), cv2.IMREAD_UNCHANGED) 
+scaling_factor_red_ball = 0.8
+red_ball_image = cv2.resize(red_ball_image2, (0, 0), fx=scaling_factor_red_ball, fy=scaling_factor_red_ball)
+
+ball_speed = 6
+boss_speed = 7
+ball2_speed = 6
 
 BALL_SHOT_COOLDOWN = 1.5
 last_ball_shot_time = 0  
@@ -109,8 +117,12 @@ boss_image_index = 1
 
 player_health = 5  
 health_image = cv2.imread(get_resource_path('static/assets/images/yorha-logo.png'), cv2.IMREAD_UNCHANGED) 
-health_offset_x = 200
+
+health_offset_x = 20
 health_offset_y = 20
+
+# health_offset_x = 20
+# health_offset_y = 20
 
 animation_folder = get_resource_path('static/assets/explosion')
 animation_images = []
@@ -600,8 +612,8 @@ def draw_health(frame):
 
     has_alpha = health_image.shape[2] == 4  
 
-    new_width = int(health_image.shape[1] * 0.04)  
-    new_height = int(health_image.shape[0] * 0.03)  
+    new_width = int(health_image.shape[1] * 0.03)  
+    new_height = int(health_image.shape[0] * 0.02)  
     resized_health_image = cv2.resize(health_image, (new_width, new_height))
 
     if frame.shape[2] != 4:
@@ -754,6 +766,8 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 draw_lasers(combined_frame)
             else:
                 boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_2.png'), cv2.IMREAD_UNCHANGED)
+                scale_factor_boss = 0.9
+                boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -772,6 +786,8 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 draw_lasers(combined_frame)
             else:
                 boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_3.png'), cv2.IMREAD_UNCHANGED)
+                scale_factor_boss = 0.9
+                boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -820,6 +836,8 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 draw_lasers(combined_frame)
             else:
                 boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_2.png'), cv2.IMREAD_UNCHANGED)
+                scale_factor_boss = 0.9
+                boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -836,6 +854,8 @@ def update_boss_state(boss_state, state_change_time, current_time, combined_fram
                 draw_lasers(combined_frame)
             else:
                 boss_image = cv2.imread(get_resource_path('static/assets/boss_asset/bos_1.png'), cv2.IMREAD_UNCHANGED)
+                scale_factor_boss = 0.9
+                boss_image = cv2.resize(boss_image, None, fx=scale_factor_boss, fy=scale_factor_boss, interpolation=cv2.INTER_LINEAR)
                 move_red_balls()
                 draw_red_balls(combined_frame)
                 move_lasers()
@@ -1165,7 +1185,7 @@ def scroll_background(camera, isReset):
                 thickness = 2
                 text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
                 
-                text_x = combined_frame.shape[1] - text_size[0] - 220
+                text_x = combined_frame.shape[1] - text_size[0] - 70 # harusnya 220
                 text_y = combined_frame.shape[0] - 70
                 
                 rect_color = (130, 130, 130)  

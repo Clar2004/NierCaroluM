@@ -6,7 +6,7 @@ import pygame
 import sys, os
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7, max_num_hands=1)
+hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
 def get_resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
