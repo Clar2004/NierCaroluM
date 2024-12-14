@@ -138,6 +138,9 @@ eventSource2.onmessage = function (event) {
    else if (data.event === 'accuracy') {
       console.log("accuracy received")
       accuracy_match = data.accuracy;
+      if (accuracy_match != 0){
+         accuracy_match = 50 + accuracy_match
+      }
 
       if (isCheatActivated) {
          console.log("Cheat activated, accuracy set to 999.99");

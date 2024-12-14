@@ -280,9 +280,13 @@ def is_collision_with_boss(combined_frame):
 def is_collision_with_player(projectile):
     global player_x, player_y, player_image
     
-    player_radius = player_image.shape[1] // 2
+    collider_scale = 0.8
+    
+    projectile_radius = min(red_ball_image.shape[1],red_ball_image.shape[0]) // 2 * collider_scale
+
     dist = math.sqrt((projectile.x - player_x) ** 2 + (projectile.y - player_y) ** 2)
-    if dist < player_radius:
+
+    if dist < projectile_radius + (player_image.shape[1] // 2):
         return True
     return False
 

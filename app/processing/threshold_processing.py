@@ -14,8 +14,6 @@ def get_resource_path(relative_path):
     else:
         return os.path.join(os.getcwd(), relative_path)
 
-
-threshold_level = 128  
 lock = Lock()
 input_image = None
 previous_x = None  
@@ -42,6 +40,11 @@ def generate_threshold_frames(camera, frame_width=800, frame_height=600):
     pygame.mixer.init()
     pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
+    
+    image_path = get_resource_path("static/assets/images/Threshold.png")
+    initialize_threshold_image(image_path)
+    
+    threshold_level = 128  
 
     while True:
         success, frame = camera.read()

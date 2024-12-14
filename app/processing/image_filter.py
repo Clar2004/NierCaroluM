@@ -125,6 +125,8 @@ def generate_frames(camera):
     pygame.mixer.music.load(get_resource_path("static/assets/sound/boss_bg_8bit.mp3"))
     pygame.mixer.music.play(loops=-1, start=0.0)
     
+    initialize_base_image(get_resource_path("static/assets/images/Image_Filter_Asset.png"), blur_strength=51)
+    
     while True:
         processed_frame = process_frame(camera)
         if processed_frame is None:

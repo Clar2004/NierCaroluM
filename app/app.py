@@ -115,8 +115,6 @@ def menu_feed():
             status=500, 
         )
 
-initialize_base_image(get_resource_path("static/assets/images/Image_Filter_Asset.png"), blur_strength=51)
-
 @app.route('/image_filter')
 def image_filter_page():
     return render_template('image_filter.html')
@@ -176,9 +174,6 @@ def video_feed():
         )
 
 ##  Threshold Processing Routes ##
-image_path = get_resource_path("static/assets/images/Threshold.png")
-initialize_threshold_image(image_path)
-
 @app.route("/threshold")
 def threshold_page():
     return render_template("threshold.html")
