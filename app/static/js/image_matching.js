@@ -140,6 +140,9 @@ eventSource2.onmessage = function (event) {
       accuracy_match = data.accuracy;
       if (accuracy_match != 0){
          accuracy_match = 50 + accuracy_match
+         if(accuracy_match > 100){
+            accuracy_match = 100
+         }
       }
 
       if (isCheatActivated) {
@@ -150,7 +153,7 @@ eventSource2.onmessage = function (event) {
          accuracyText.textContent = `Accuracy: ${accuracy_match}%`;
       }
 
-      if (accuracy_match > 70) {
+      if (accuracy_match > 60) {
 
          fetch("/game_four", {
             method: "POST",

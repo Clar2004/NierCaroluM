@@ -38,10 +38,10 @@ def initialize_maze_image(image_path):
 
 def calculate_entry_points(width, height):
     return [
-        (int(width * 0.1), int(height * 0.05)), 
-        (int(width * 0.95), int(height * 0.16)),  
-        (int(width * 0.05), int(height * 0.65)),  
-        (int(width * 0.95), int(height * 0.77)),  
+        (int(width * 0.1), int(height * 0.04)), 
+        (int(width * 0.96), int(height * 0.16)),  
+        (int(width * 0.04), int(height * 0.65)),  
+        (int(width * 0.96), int(height * 0.77)),  
     ]
 
 def calculate_cpu_zone(width, height):
